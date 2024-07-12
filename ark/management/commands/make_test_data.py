@@ -19,17 +19,17 @@ class Command(BaseCommand):
         parser.add_argument("shoulder", type=str)
 
     def handle(self, *args, **options):
-        n_arks = options['ark_count']
+        n_arks = options["ark_count"]
         naan = Naan.objects.get(pk=options["naan"])
         if not naan:
-            print('minting naan')
-            naan = Naan(naan=options['naan'])
+            print("minting naan")
+            naan = Naan(naan=options["naan"])
             naan.save()
 
-        shoulder = Shoulder.objects.get(shoulder=options['shoulder'])
+        shoulder = Shoulder.objects.get(shoulder=options["shoulder"])
         if not shoulder:
-            print('minting shoulder')
-            shoulder = Shoulder(shoulder=options['shoulder'], naan=Naan)
+            print("minting shoulder")
+            shoulder = Shoulder(shoulder=options["shoulder"], naan=Naan)
             shoulder.save
         batch_size = 10000
 
@@ -37,7 +37,7 @@ class Command(BaseCommand):
             objs = []
             for _ in range(batch_size):
                 a = Ark.create(naan, shoulder)
-                a.url = f"https://google.com?q={a.ark}",
+                a.url = (f"https://google.com?q={a.ark}",)
                 objs.append(a)
 
             with transaction.atomic():

@@ -20,12 +20,11 @@ class Command(BaseCommand):
         parser.add_argument("shoulder", type=str)
 
     def handle(self, *args, **options):
-        shoulder_str = options['shoulder']
+        shoulder_str = options["shoulder"]
         naan = Naan.objects.get(pk=options["naan"])
         shoulder = Shoulder.objects.get(shoulder=shoulder_str)
         arks = Ark.objects.filter(shoulder=shoulder, naan=naan)
-        possible_ids = list(arks.values_list('ark', flat=True))
+        possible_ids = list(arks.values_list("ark", flat=True))
         random_ids = [secrets.choice(possible_ids) for _ in range(50)]
         for id in random_ids:
             print(id)
-

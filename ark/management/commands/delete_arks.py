@@ -19,15 +19,14 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         naan_id = options["naan"]
-        shoulder_str = options['shoulder']
+        shoulder_str = options["shoulder"]
         naan = Naan.objects.get(pk=options["naan"])
         if not naan:
-            print('minting naan')
-            naan = Naan(naan=options['naan'])
+            print("minting naan")
+            naan = Naan(naan=options["naan"])
             naan.save()
 
         shoulder = Shoulder.objects.get(shoulder=shoulder_str)
         arks = Ark.objects.filter(shoulder=shoulder, naan=naan)
         info = arks.delete()
         print(f"Deleted {info[0]} objects")
-

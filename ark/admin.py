@@ -15,6 +15,7 @@ class NaanAdmin(admin.ModelAdmin):
 
     list_display = ["name", "naan"]
 
+
 @admin.register(Shoulder)
 class ShoulderAdmin(admin.ModelAdmin):
     """Django Admin model for shoulders"""
@@ -23,11 +24,12 @@ class ShoulderAdmin(admin.ModelAdmin):
     # because it will break existing ARK identifiers
     def get_readonly_fields(self, request, obj=None):
         defaults = super().get_readonly_fields(request, obj=obj)
-        if obj:  
-            defaults = tuple(defaults) + ('shoulder', )  
+        if obj:
+            defaults = tuple(defaults) + ("shoulder",)
         return defaults
 
     list_display = ["shoulder", "name", "naan"]
+
 
 @admin.register(Key)
 class KeyAdmin(admin.ModelAdmin):
@@ -37,11 +39,14 @@ class KeyAdmin(admin.ModelAdmin):
     """
 
     list_display = ["key", "naan", "active"]
-    exclude=['key']
+    exclude = ["key"]
 
     def save_model(self, request, obj, form, change):
         obj, api_key = obj.generate_api_key()
         super().save_model(request, obj, form, change)
-        
+
         # Add a custom message after saving the model
-        messages.success(request, f"Your new API key is {api_key}. Write this down in a secure location!")
+        messages.success(
+            request,
+            f"Your new API key is {api_key}. Write this down in a secure location!",
+        )

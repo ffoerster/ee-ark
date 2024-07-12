@@ -31,7 +31,7 @@ env = environ.Env(
     ARKLET_STATIC_ROOT=(str, "static"),
     ARKLET_MEDIA_ROOT=(str, "media"),
     RESOLVER=(bool, False),
-    ARKLET_NOID_LENGTH=(int, 8)
+    ARKLET_NOID_LENGTH=(int, 8),
 )
 
 # .env files are optional. django-environ will log an INFO message if no file is found

@@ -11,6 +11,7 @@ from django.db import models
 from ark.forms import UpdateArkForm, validate_shoulder
 from ark.utils import generate_noid, noid_check_digit
 
+
 class Naan(models.Model):
     naan = models.PositiveBigIntegerField(primary_key=True)
     name = models.CharField(max_length=200)
@@ -71,7 +72,7 @@ class Shoulder(models.Model):
     description = models.TextField()
 
     class Meta:
-        unique_together = ('shoulder', 'naan')
+        unique_together = ("shoulder", "naan")
 
     def __str__(self):
         return f"{self.naan.naan}{self.shoulder}"
@@ -95,44 +96,41 @@ class Ark(models.Model):
     source = models.TextField(default="", blank=True)
 
     COLUMN_METADATA = {
-        'title': {
-            'property': "http://purl.org/dc/elements/1.1/title",
-            'type': "xsd:string",
+        "title": {
+            "property": "http://purl.org/dc/elements/1.1/title",
+            "type": "xsd:string",
         },
-        'type': {
-            'property': 'http://purl.org/dc/elements/1.1/type',
-            'type': "xsd:string",
+        "type": {
+            "property": "http://purl.org/dc/elements/1.1/type",
+            "type": "xsd:string",
         },
-        'commitment': {
-            'type': "xsd:string",
+        "commitment": {
+            "type": "xsd:string",
         },
-        'identifier': {
-            'property': 'http://purl.org/dc/elements/1.1/identifier',
-            'type': "xsd:string",
+        "identifier": {
+            "property": "http://purl.org/dc/elements/1.1/identifier",
+            "type": "xsd:string",
         },
-        'format': {
-            'property': 'http://purl.org/dc/elements/1.1/format',
-            'type': "xsd:string",
+        "format": {
+            "property": "http://purl.org/dc/elements/1.1/format",
+            "type": "xsd:string",
         },
-        'relation': {
-            'property': 'http://purl.org/dc/elements/1.1/relation',
-            'type': 'xsd:anyURI'
+        "relation": {
+            "property": "http://purl.org/dc/elements/1.1/relation",
+            "type": "xsd:anyURI",
         },
-        'source': {
-            'property': 'http://purl.org/dc/elements/1.1/source',
-            'type': 'xsd:anyURI'
+        "source": {
+            "property": "http://purl.org/dc/elements/1.1/source",
+            "type": "xsd:anyURI",
         },
-        'url': {
-            'property': 'https://schema.org/url',
-            'type': 'xsd:anyURI'
-        }
+        "url": {"property": "https://schema.org/url", "type": "xsd:anyURI"},
     }
 
     def clean(self):
         expected_ark = f"{self.naan.naan}{self.shoulder}{self.assigned_name}"
         if self.ark != expected_ark:
             raise ValidationError(f"expected {expected_ark} got {self.ark}")
-    
+
     @classmethod
     def create(cls, naan: Naan, shoulder: Shoulder):
         noid = generate_noid(os.environ.get("ARKLET_NOID_LENGTH", 8))
@@ -143,15 +141,12 @@ class Ark(models.Model):
         ark_string = f"{ark_prefix}{assigned_name}"
 
         return Ark(
-            ark=ark_string,
-            naan=naan,
-            shoulder=shoulder,
-            assigned_name=assigned_name
+            ark=ark_string, naan=naan, shoulder=shoulder, assigned_name=assigned_name
         )
-    
+
     def set_fields(self, data: dict):
         permitted_fields = set(UpdateArkForm.base_fields)
-        permitted_fields.remove('ark')
+        permitted_fields.remove("ark")
         for key, val in data.items():
             if key in permitted_fields:
                 setattr(self, key, val)

@@ -20,6 +20,10 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         naan = Naan.objects.get(pk=options["naan"])
-        arks = Ark.objects.filter(naan=naan).values('shoulder__shoulder').annotate(total=Count('ark')).order_by('shoulder__shoulder')
+        arks = (
+            Ark.objects.filter(naan=naan)
+            .values("shoulder__shoulder")
+            .annotate(total=Count("ark"))
+            .order_by("shoulder__shoulder")
+        )
         print(json.dumps(list(arks), indent=4))
-

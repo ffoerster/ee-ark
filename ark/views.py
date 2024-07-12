@@ -26,6 +26,7 @@ COLLISIONS = 10
 
 logger = logging.getLogger(__name__)
 
+
 def authorize(request, naan):
     bearer_token = request.headers.get("Authorization")
     if not bearer_token:
@@ -34,14 +35,14 @@ def authorize(request, naan):
     key = bearer_token.split()[-1]
 
     try:
-        keys = Key.objects.filter(naan=naan,active=True)
+        keys = Key.objects.filter(naan=naan, active=True)
         for k in keys:
             if k.check_password(key):
                 return k.naan
         return None
     except ValidationError as e:  # probably an invalid key
         return None
-    
+
 
 @csrf_exempt
 def mint_ark(request):
@@ -121,7 +122,7 @@ def update_ark(request):
         ark_obj = Ark.objects.get(ark=f"{naan}/{assigned_name}")
     except Ark.DoesNotExist:
         raise Http404
-    
+
     ark_obj.set_fields(update_request.cleaned_data)
     ark_obj.save()
 
@@ -129,8 +130,8 @@ def update_ark(request):
 
 
 def resolve_ark(request, ark: str):
-    info_inflection = 'info' in request.GET
-    json_inflection = 'json' in request.GET
+    info_inflection = "info" in request.GET
+    json_inflection = "json" in request.GET
 
     try:
         _, naan, identifier = parse_ark(ark)
@@ -146,12 +147,14 @@ def resolve_ark(request, ark: str):
             return json_ark(request, ark_obj)
         if not ark_obj.url:
             return view_ark(request, ark_obj)
-        return HttpResponseRedirect(ark_obj.url + '?' + request.META['QUERY_STRING'])
+        return HttpResponseRedirect(ark_obj.url + "?" + request.META["QUERY_STRING"])
     else:
         # Ark not found. Try to find an ark that is a prefix.
         prefixes = [f"{naan}/{a}" for a in gen_prefixes(identifier)]
         # Get the one with the longest prefix
-        ark_prefix = Ark.objects.filter(ark__in=prefixes).order_by(Length('ark')).first()
+        ark_prefix = (
+            Ark.objects.filter(ark__in=prefixes).order_by(Length("ark")).first()
+        )
         if ark_prefix:
             suffix = ark_str.removeprefix(ark_prefix.ark)
             return HttpResponseRedirect(ark_prefix.url + suffix)
@@ -160,9 +163,7 @@ def resolve_ark(request, ark: str):
                 raise Http404
             try:
                 naan_obj = Naan.objects.get(naan=naan)
-                return HttpResponseRedirect(
-                    f"{naan_obj.url}/ark:/{ark_str}"
-                )
+                return HttpResponseRedirect(f"{naan_obj.url}/ark:/{ark_str}")
             except Naan.DoesNotExist:
                 resolver = "https://n2t.net"
                 # TODO: more robust resolver URL creation
@@ -172,51 +173,58 @@ def resolve_ark(request, ark: str):
 """
 Return HTML human readable webpage information about the Ark object
 """
+
+
 def view_ark(request: HttpRequest, ark: Ark):
 
     context = {
-        'ark': ark.ark,
-        'url': ark.url,
-        'label': ark.title,
-        'type': ark.type,
-        'commitment': ark.commitment,
-        'identifier': ark.identifier,
-        'format': ark.format,
-        'relation': ark.relation,
-        'source': ark.source,
-        'metadata': ark.metadata
+        "ark": ark.ark,
+        "url": ark.url,
+        "label": ark.title,
+        "type": ark.type,
+        "commitment": ark.commitment,
+        "identifier": ark.identifier,
+        "format": ark.format,
+        "relation": ark.relation,
+        "source": ark.source,
+        "metadata": ark.metadata,
     }
 
-    return render(request, 'info.html', context)
+    return render(request, "info.html", context)
+
 
 """
 Return the Ark object as JSON
 """
+
+
 def ark_to_json(ark: Ark, metadata=True):
     data = {
-        'ark': ark.ark,
-        'url': ark.url,
-        'title': ark.title,
-        'type': ark.type,
-        'commitment': ark.commitment,
-        'identifier': ark.identifier,
-        'format': ark.format,
-        'relation': ark.relation,
-        'source': ark.source,
-        'metadata': ark.metadata
+        "ark": ark.ark,
+        "url": ark.url,
+        "title": ark.title,
+        "type": ark.type,
+        "commitment": ark.commitment,
+        "identifier": ark.identifier,
+        "format": ark.format,
+        "relation": ark.relation,
+        "source": ark.source,
+        "metadata": ark.metadata,
     }
     if not metadata:
         return data
     obj = {}
     for key in data:
         obj[key] = Ark.COLUMN_METADATA.get(key, {})
-        obj[key]['value'] = data[key]
+        obj[key]["value"] = data[key]
     return obj
+
 
 def json_ark(request: HttpRequest, ark: Ark):
     obj = ark_to_json(ark)
     # Return the JSON response
     return JsonResponse(obj)
+
 
 @csrf_exempt
 def batch_query_arks(request):
@@ -226,7 +234,7 @@ def batch_query_arks(request):
         return HttpResponseBadRequest(e)
     if len(data) > 100:
         return HttpResponseBadRequest("Exceeded max rows (100)")
-    arks = [parse_ark_lookup(d.get('ark')) for d in data]
+    arks = [parse_ark_lookup(d.get("ark")) for d in data]
     ark_objs = Ark.objects.filter(ark__in=arks)
     resp = [ark_to_json(ark, metadata=False) for ark in ark_objs]
     return JsonResponse(resp, safe=False)
@@ -235,43 +243,40 @@ def batch_query_arks(request):
 @csrf_exempt
 def batch_update_arks(request):
     try:
-        data = json.loads(request.body.decode("utf-8"))['data']
+        data = json.loads(request.body.decode("utf-8"))["data"]
     except (json.JSONDecodeError, TypeError) as e:
         return HttpResponseBadRequest(e)
     if len(data) > 100:
         return HttpResponseBadRequest("Exceeded max rows (100)")
-    
+
     naans = set()
     for d in data:
-        if 'ark' not in d:
+        if "ark" not in d:
             return HttpResponseBadRequest("Each record must have an 'ark' field.")
-        _, naan, _ = parse_ark(d['ark'])
+        _, naan, _ = parse_ark(d["ark"])
         naans.add(naan)
 
     if len(naans) != 1:
         return HttpResponseBadRequest("Batch queries are limited to one NAAN at a time")
-    
+
     naan = naans.pop()
     authorized_naan = authorize(request, naan)
     if authorized_naan is None:
         return HttpResponseForbidden()
 
-    
-    arks = [parse_ark_lookup(d.get('ark')) for d in data]
+    arks = [parse_ark_lookup(d.get("ark")) for d in data]
     ark_objs = Ark.objects.filter(ark__in=arks)
-    
+
     # track the fields we have seen so far for efficient updating
     seen_fields = set()
     for ark_obj, new_record in zip(ark_objs, data):
         ark_obj.set_fields(new_record)
         seen_fields.update(new_record.keys())
     # don't update primary key
-    seen_fields.remove('ark')
+    seen_fields.remove("ark")
     n_updated = Ark.objects.bulk_update(ark_objs, fields=seen_fields)
-    return JsonResponse({
-        'num_received': len(data),
-        'num_updated': n_updated
-    })
+    return JsonResponse({"num_received": len(data), "num_updated": n_updated})
+
 
 @csrf_exempt
 def batch_mint_arks(request):
@@ -280,20 +285,22 @@ def batch_mint_arks(request):
     except (json.JSONDecodeError, TypeError) as e:
         return HttpResponseBadRequest(e)
 
-    naan = data.get('naan')
+    naan = data.get("naan")
     authorized_naan = authorize(request, naan)
     if authorized_naan is None:
         return HttpResponseForbidden()
-    records = data['data']
+    records = data["data"]
 
     if len(records) > 100:
         return HttpResponseBadRequest("Exceeded max rows (100)")
 
     shoulders = set()
     for d in records:
-        if 'shoulder' not in d:
-            return HttpResponseBadRequest("shoulder value must be present in every record")
-        shoulders.add(d['shoulder'])
+        if "shoulder" not in d:
+            return HttpResponseBadRequest(
+                "shoulder value must be present in every record"
+            )
+        shoulders.add(d["shoulder"])
     shoulder_objs = dict()
     for s in shoulders:
         shoulder_obj = Shoulder.objects.filter(shoulder=s).first()
@@ -307,7 +314,7 @@ def batch_mint_arks(request):
         try:
             new_arks = []
             for record in records:
-                shoulder = shoulder_objs[record['shoulder']]
+                shoulder = shoulder_objs[record["shoulder"]]
                 new_ark = Ark.create(authorized_naan, shoulder)
                 new_ark.set_fields(record)
                 new_arks.append(new_ark)
@@ -319,15 +326,20 @@ def batch_mint_arks(request):
         msg = f"Gave up creating bulk arks after {COLLISIONS} collision(s)"
         logger.error(msg)
         return HttpResponseServerError(msg)
-    return JsonResponse({
-        'num_received': len(records),
-        'arks_created': [ark_to_json(c, metadata=False) for c in created]
-    })
+    return JsonResponse(
+        {
+            "num_received": len(records),
+            "arks_created": [ark_to_json(c, metadata=False) for c in created],
+        }
+    )
+
 
 def status(request):
-    service = 'resolver' if os.environ.get("RESOLVER") else 'minter'
+    service = "resolver" if os.environ.get("RESOLVER") else "minter"
 
-    return JsonResponse({
-        'service': service,
-        'status': 'ok!',
-    })
+    return JsonResponse(
+        {
+            "service": service,
+            "status": "ok!",
+        }
+    )

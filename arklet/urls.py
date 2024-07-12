@@ -36,4 +36,3 @@ resolverpatterns = [
 combinedpatterns = minterpatterns + resolverpatterns
 
 urlpatterns = resolverpatterns if os.environ.get("RESOLVER") else combinedpatterns
-

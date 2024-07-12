@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ark', '0006_alter_ark_shoulder'),
+        ("ark", "0006_alter_ark_shoulder"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='shoulder',
-            name='shoulder',
+            model_name="shoulder",
+            name="shoulder",
             field=models.CharField(editable=False, max_length=50, unique=True),
         ),
     ]

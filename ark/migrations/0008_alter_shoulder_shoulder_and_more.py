@@ -7,17 +7,19 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ark', '0007_alter_shoulder_shoulder'),
+        ("ark", "0007_alter_shoulder_shoulder"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='shoulder',
-            name='shoulder',
-            field=models.CharField(max_length=50, validators=[ark.forms.validate_shoulder]),
+            model_name="shoulder",
+            name="shoulder",
+            field=models.CharField(
+                max_length=50, validators=[ark.forms.validate_shoulder]
+            ),
         ),
         migrations.AlterUniqueTogether(
-            name='shoulder',
-            unique_together={('shoulder', 'naan')},
+            name="shoulder",
+            unique_together={("shoulder", "naan")},
         ),
     ]

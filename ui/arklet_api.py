@@ -111,6 +111,9 @@ def update_csv(data: dict):
     )
 
 
+ﬂ
+
+
 def mint_csv(data: dict):
     if "csv" not in data or not data["csv"]:
         raise ValueError("Must include --csv argument for bulk operations")

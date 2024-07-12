@@ -33,13 +33,14 @@ def parse_ark(ark: str) -> Tuple[str, int, str]:
     if len(parts) < 2:
         raise ValueError("Not a valid ARK")
     naan = parts[0]
-    identifier = '/'.join(parts[1:])
+    identifier = "/".join(parts[1:])
     try:
         naan_int = int(naan)
     except ValueError:
         raise ValueError("ARK NAAN must be an integer")
 
     return nma, naan_int, identifier
+
 
 def parse_ark_lookup(ark: str) -> str:
 
@@ -48,6 +49,6 @@ def parse_ark_lookup(ark: str) -> str:
 
 
 def gen_prefixes(ark: str):
-    parts = ark.split('/')
+    parts = ark.split("/")
     for i in range(1, len(parts)):
-        yield '/'.join(parts[:-i])
+        yield "/".join(parts[:-i])

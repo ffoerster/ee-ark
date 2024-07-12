@@ -7,13 +7,17 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('ark', '0005_alter_key_key'),
+        ("ark", "0005_alter_key_key"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='ark',
-            name='shoulder',
-            field=models.ForeignKey(editable=False, on_delete=django.db.models.deletion.DO_NOTHING, to='ark.shoulder'),
+            model_name="ark",
+            name="shoulder",
+            field=models.ForeignKey(
+                editable=False,
+                on_delete=django.db.models.deletion.DO_NOTHING,
+                to="ark.shoulder",
+            ),
         ),
     ]
