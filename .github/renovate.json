@@ -5,7 +5,6 @@
     "group:recommended", 
     "group:allNonMajor", 
     ":rebaseStalePrs",
-    "@nuxtjs",
     ":labels(dependencies,devops)",
     ":maintainLockFilesWeekly",
     ":enableVulnerabilityAlerts",

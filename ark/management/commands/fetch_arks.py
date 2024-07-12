@@ -8,6 +8,7 @@ from ark.models import Ark, Naan, Shoulder
 from ark.utils import generate_noid
 import os
 import random
+import secrets
 
 
 class Command(BaseCommand):
@@ -24,7 +25,7 @@ class Command(BaseCommand):
         shoulder = Shoulder.objects.get(shoulder=shoulder_str)
         arks = Ark.objects.filter(shoulder=shoulder, naan=naan)
         possible_ids = list(arks.values_list('ark', flat=True))
-        random_ids = random.choices(possible_ids, k=50)
+        random_ids = [secrets.choice(possible_ids) for _ in range(50)]
         for id in random_ids:
             print(id)
 
