@@ -12,6 +12,7 @@
     ":automergeTypes",
     ":automergePatch"
   ],
+  "includeForks": true,
   "packageRules": [
     {
       "matchUpdateTypes": ["minor", "patch", "digest"],
