@@ -343,3 +343,12 @@ def status(request):
             "status": "ok!",
         }
     )
+
+
+def health_check(request):
+    return JsonResponse(
+        {
+            "status": "ok",
+        },
+        status=200,
+    )

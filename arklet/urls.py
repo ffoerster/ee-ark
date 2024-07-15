@@ -27,11 +27,13 @@ minterpatterns = [
     path("bulk_update", views.batch_update_arks, name="bulk_update"),
     path("bulk_mint", views.batch_mint_arks, name="bulk_mint"),
     path("admin/", admin.site.urls),
+    path("healthcheck", views.health_check, name="healthcheck"),
 ]
 
 resolverpatterns = [
     re_path(r"^(resolve/)?(?P<ark>ark:/?.*$)", views.resolve_ark, name="resolve_ark"),
     path("", views.status, name="status"),
+    path("healthcheck", views.health_check, name="healthcheck"),
 ]
 
 combinedpatterns = minterpatterns + resolverpatterns
