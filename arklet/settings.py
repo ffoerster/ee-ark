@@ -20,6 +20,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 env = environ.Env(
     # set default values
     ARKLET_HOST=(str, "127.0.0.1"),
+    ARKLET_FALLBACK_RESOLVER=(str, "https://n2t.net"),
     ARKLET_DEBUG=(bool, False),
     ARKLET_POSTGRES_NAME=(str, "arklet"),
     ARKLET_POSTGRES_HOST=(str, "127.0.0.1"),
@@ -75,6 +76,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "ark.middleware.RequestLogMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -177,6 +179,8 @@ MEDIA_ROOT = env.str("ARKLET_MEDIA_ROOT")
 # https://docs.djangoproject.com/en/3.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+ARK_FALLBACK_RESOLVER = env("ARKLET_FALLBACK_RESOLVER")
 
 SENTRY_DSN = env("ARKLET_SENTRY_DSN")
 SENTRY_SAMPLE_RATE = 1 / int(env("ARKLET_SENTRY_TRANSACTIONS_PER_TRACE"))

@@ -2,8 +2,9 @@ import json
 import logging
 import os
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
 from django.db.models.functions import Length
 from django.http import (
     Http404,
@@ -17,6 +18,7 @@ from django.http import (
 )
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
+from django_ratelimit.decorators import ratelimit
 
 from ark.forms import MintArkForm, UpdateArkForm
 from ark.models import Ark, Naan, Key, Shoulder
@@ -44,6 +46,7 @@ def authorize(request, naan):
         return None
 
 
+@ratelimit(key="ip", rate="60/m", block=True)
 @csrf_exempt
 def mint_ark(request):
     if request.method != "POST":
@@ -89,9 +92,11 @@ def mint_ark(request):
     if ark and collisions > 0:
         logger.warning("Ark created after %d collision(s)", collisions)
 
+    logger.info("mint naan=%s ark=%s ip=%s", authorized_naan, ark, request.META.get("REMOTE_ADDR"))
     return JsonResponse({"ark": str(ark)})
 
 
+@ratelimit(key="ip", rate="60/m", block=True)
 @csrf_exempt
 def update_ark(request):
     if request.method != "PUT":
@@ -126,6 +131,7 @@ def update_ark(request):
     ark_obj.set_fields(update_request.cleaned_data)
     ark_obj.save()
 
+    logger.info("update naan=%s ark=%s ip=%s", authorized_naan, ark, request.META.get("REMOTE_ADDR"))
     return JsonResponse(ark_to_json(ark_obj, metadata=False))
 
 
@@ -165,8 +171,7 @@ def resolve_ark(request, ark: str):
                 naan_obj = Naan.objects.get(naan=naan)
                 return HttpResponseRedirect(f"{naan_obj.url}/ark:/{ark_str}")
             except Naan.DoesNotExist:
-                resolver = "https://n2t.net"
-                # TODO: more robust resolver URL creation
+                resolver = settings.ARK_FALLBACK_RESOLVER
                 return HttpResponseRedirect(f"{resolver}/ark:/{ark_str}")
 
 
@@ -226,6 +231,7 @@ def json_ark(request: HttpRequest, ark: Ark):
     return JsonResponse(obj)
 
 
+@ratelimit(key="ip", rate="60/m", block=True)
 @csrf_exempt
 def batch_query_arks(request):
     try:
@@ -240,6 +246,7 @@ def batch_query_arks(request):
     return JsonResponse(resp, safe=False)
 
 
+@ratelimit(key="ip", rate="60/m", block=True)
 @csrf_exempt
 def batch_update_arks(request):
     try:
@@ -275,9 +282,11 @@ def batch_update_arks(request):
     # don't update primary key
     seen_fields.remove("ark")
     n_updated = Ark.objects.bulk_update(ark_objs, fields=seen_fields)
+    logger.info("batch_update naan=%s count=%d ip=%s", naan, n_updated, request.META.get("REMOTE_ADDR"))
     return JsonResponse({"num_received": len(data), "num_updated": n_updated})
 
 
+@ratelimit(key="ip", rate="60/m", block=True)
 @csrf_exempt
 def batch_mint_arks(request):
     try:
@@ -326,6 +335,7 @@ def batch_mint_arks(request):
         msg = f"Gave up creating bulk arks after {COLLISIONS} collision(s)"
         logger.error(msg)
         return HttpResponseServerError(msg)
+    logger.info("batch_mint naan=%s count=%d ip=%s", naan, len(created), request.META.get("REMOTE_ADDR"))
     return JsonResponse(
         {
             "num_received": len(records),
@@ -346,9 +356,10 @@ def status(request):
 
 
 def health_check(request):
-    return JsonResponse(
-        {
-            "status": "ok",
-        },
-        status=200,
-    )
+    try:
+        connection.ensure_connection()
+        db_ok = True
+    except Exception:
+        db_ok = False
+    status_code = 200 if db_ok else 503
+    return JsonResponse({"status": "ok" if db_ok else "degraded", "db": db_ok}, status=status_code)

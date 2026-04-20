@@ -1,0 +1,6 @@
+[tools]
+1password = "latest"
+python = "latest"
+
+[env]
+_.python.venv = ".venv"

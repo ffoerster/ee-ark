@@ -4,9 +4,7 @@ import argparse
 import json
 import os
 
-# DEFAULT_URL = 'http://127.0.0.1:8001'
-DEFAULT_URL = "http://ark.frick.org:8080"
-DEFAULT_KEY = os.environ["ARK_API_KEY"]
+DEFAULT_URL = os.environ.get("ARK_API_URL", "http://127.0.0.1:8001")
 
 MINT_FIELDS = [
     "naan",
@@ -59,7 +57,7 @@ def status(_):
 
 
 def authorized(method, url, data):
-    auth = DEFAULT_KEY
+    auth = os.environ.get("ARK_API_KEY", "")
     return query_generic(method, url, json=data, headers={"Authorization": auth})
 
 
@@ -78,8 +76,8 @@ def mint(data: dict):
 
 
 def csv2json(csvfile):
-    reader = csv.DictReader(open(csvfile, "rt"))
-    return [r for r in reader]
+    with open(csvfile, "rt") as f:
+        return list(csv.DictReader(f))
 
 
 def query_csv(data: dict):
@@ -109,9 +107,6 @@ def update_csv(data: dict):
             "data": update_data,
         },
     )
-
-
-ﬂ
 
 
 def mint_csv(data: dict):

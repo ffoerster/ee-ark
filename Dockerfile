@@ -3,7 +3,7 @@
 # ----------------------------------------------------
 # Base-image
 # ----------------------------------------------------
-FROM python:3.10-slim-bullseye AS common-base
+FROM python:3.12-slim-bookworm AS common-base
 # Django directions: https://blog.ploetzli.ch/2020/efficient-multi-stage-build-django-docker/
 # Pip on docker : https://pythonspeed.com/articles/multi-stage-docker-python/
 # https://blog.mikesir87.io/2018/07/leveraging-multi-stage-builds-single-dockerfile-dev-prod/
