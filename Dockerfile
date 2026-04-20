@@ -59,8 +59,8 @@ FROM app-run AS prod
 ENV ENV="prod" \
     ARKLET_DEBUG="False"
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:$PORT/healthcheck')" || exit 1
+#HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+#    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:$PORT/healthcheck')" || exit 1
 
 CMD ["./entrypoint.sh"]
 
