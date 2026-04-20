@@ -1,0 +1,472 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,400&display=swap');
+
+/* ── Electric Echoes Admin Theme ─────────────────────────────── */
+
+:root {
+  --font-family-primary: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-family-monospace: "PP Neue Montreal Mono", ui-monospace, "Cascadia Code", Menlo, monospace;
+
+  /* Core */
+  --primary: #ffffff;
+  --primary-fg: #0f0f0f;
+  --accent: #e5e5e5;
+
+  /* Body */
+  --body-fg: #e5e5e5;
+  --body-bg: #0f0f0f;
+  --body-quiet-color: #737373;
+  --body-loud-color: #ffffff;
+
+  /* Header */
+  --header-color: #ffffff;
+  --header-branding-color: #ffffff;
+  --header-bg: #0a0a0a;
+  --header-link-color: #ffffff;
+
+  /* Breadcrumbs */
+  --breadcrumbs-fg: #a3a3a3;
+  --breadcrumbs-link-fg: #e5e5e5;
+  --breadcrumbs-bg: #141414;
+
+  /* Links */
+  --link-fg: #e5e5e5;
+  --link-hover-color: #ffffff;
+  --link-selected-fg: #a3a3a3;
+
+  /* Layout */
+  --hairline-color: #262626;
+  --border-radius: 8px;
+
+  /* Modules */
+  --module-bg: #141414;
+  --module-selected-bg: #1a1a1a;
+  --module-header-bg: #1a1a1a;
+  --module-header-fg: #ffffff;
+  --module-header-link-color: #e5e5e5;
+  --content-bg: #0f0f0f;
+  --darkened-bg: #141414;
+  --selected-bg: #1a1a1a;
+  --selected-row: rgba(255, 255, 255, 0.04);
+
+  /* Buttons */
+  --button-fg: #0f0f0f;
+  --button-bg: #ffffff;
+  --button-hover-bg: #e5e5e5;
+  --default-button-bg: #ffffff;
+  --default-button-hover-bg: #e5e5e5;
+  --close-button-bg: #404040;
+  --close-button-hover-bg: #525252;
+  --delete-button-bg: #7f1d1d;
+  --delete-button-hover-bg: #991b1b;
+  --object-tools-fg: #0f0f0f;
+  --object-tools-bg: #ffffff;
+  --object-tools-hover-bg: #e5e5e5;
+
+  /* Messages */
+  --error-fg: #f97316;
+  --message-success-bg: #14532d;
+  --message-warning-bg: #78350f;
+  --message-error-bg: #450a0a;
+}
+
+/* ── Base reset ───────────────────────────────────────────────── */
+
+body {
+  font-family: var(--font-family-primary);
+  background: var(--body-bg);
+  color: var(--body-fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a:link, a:visited { color: var(--link-fg); }
+a:hover           { color: var(--link-hover-color); text-decoration: underline; }
+
+/* ── Header ───────────────────────────────────────────────────── */
+
+#header {
+  background: var(--header-bg);
+  border-bottom: 1px solid #1f1f1f;
+  padding: 12px 20px;
+}
+
+#branding h1 {
+  font-family: var(--font-family-primary);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  font-size: 1.125rem;
+}
+
+#branding h1 a:link,
+#branding h1 a:visited {
+  color: #ffffff;
+}
+
+#user-tools {
+  font-size: 0.8125rem;
+  color: #737373;
+}
+
+#user-tools a {
+  color: #a3a3a3;
+  border: 1px solid #262626;
+  padding: 3px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+#user-tools a:hover {
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+/* ── Breadcrumbs ──────────────────────────────────────────────── */
+
+div.breadcrumbs {
+  background: var(--breadcrumbs-bg);
+  border-bottom: 1px solid #262626;
+  color: var(--breadcrumbs-fg);
+  font-size: 0.8125rem;
+  padding: 10px 20px;
+}
+
+div.breadcrumbs a {
+  color: var(--breadcrumbs-link-fg);
+}
+
+/* ── Content ──────────────────────────────────────────────────── */
+
+#content {
+  background: var(--body-bg);
+}
+
+#content-main,
+#content-related {
+  padding: 20px;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-family-primary);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--body-loud-color);
+}
+
+/* ── Modules (cards) ──────────────────────────────────────────── */
+
+.module {
+  background: var(--module-bg);
+  border: 1px solid #262626;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+}
+
+.module h2,
+.module caption,
+.inline-group h3 {
+  background: var(--module-header-bg);
+  border-bottom: 1px solid #262626;
+  color: var(--module-header-fg);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+}
+
+.module h2 a,
+.module caption a {
+  color: var(--module-header-link-color);
+}
+
+/* ── Dashboard app list ───────────────────────────────────────── */
+
+#content-main .app-ark.module table th {
+  background: var(--darkened-bg);
+}
+
+/* ── Tables ───────────────────────────────────────────────────── */
+
+#result_list,
+.results table {
+  border-radius: var(--border-radius);
+  border: 1px solid #262626;
+  overflow: hidden;
+}
+
+thead th {
+  background: #1a1a1a;
+  border-bottom: 1px solid #262626;
+  color: #a3a3a3;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+thead th a:link,
+thead th a:visited {
+  color: #a3a3a3;
+}
+
+thead th a:hover {
+  color: #ffffff;
+}
+
+tbody tr {
+  border-bottom: 1px solid #1f1f1f;
+  transition: background 0.1s;
+}
+
+tbody tr:last-child {
+  border-bottom: none;
+}
+
+tbody tr:hover,
+tbody tr.selected {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+td, th {
+  color: var(--body-fg);
+}
+
+/* ── Forms ────────────────────────────────────────────────────── */
+
+input[type=text],
+input[type=password],
+input[type=email],
+input[type=url],
+input[type=number],
+input[type=search],
+textarea,
+select {
+  background: #141414;
+  border: 1px solid #333333;
+  border-radius: 6px;
+  color: #e5e5e5;
+  font-family: var(--font-family-primary);
+  font-size: 0.875rem;
+  padding: 7px 10px;
+  transition: border-color 0.15s;
+}
+
+input[type=text]:focus,
+input[type=password]:focus,
+input[type=email]:focus,
+input[type=url]:focus,
+input[type=number]:focus,
+input[type=search]:focus,
+textarea:focus,
+select:focus {
+  border-color: #525252;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.06);
+}
+
+.form-row {
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.help {
+  color: #737373;
+  font-size: 0.8125rem;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────── */
+
+.button,
+input[type=submit],
+input[type=button],
+.submit-row input,
+a.button {
+  background: var(--button-bg);
+  border: none;
+  border-radius: 6px;
+  color: var(--button-fg);
+  font-family: var(--font-family-primary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.button:hover,
+input[type=submit]:hover,
+input[type=button]:hover,
+.submit-row input:hover,
+a.button:hover {
+  background: var(--button-hover-bg);
+}
+
+.button.default,
+input[type=submit].default,
+.submit-row input.default {
+  background: var(--default-button-bg);
+  color: var(--primary-fg);
+}
+
+.deletelink,
+a.deletelink {
+  background: var(--delete-button-bg);
+  color: #fff;
+}
+
+.deletelink:hover,
+a.deletelink:hover {
+  background: var(--delete-button-hover-bg);
+  color: #fff;
+}
+
+.object-tools a {
+  background: var(--object-tools-bg);
+  color: var(--object-tools-fg);
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.object-tools a:hover {
+  background: var(--object-tools-hover-bg);
+  color: var(--object-tools-fg);
+}
+
+/* ── Sidebar navigation ───────────────────────────────────────── */
+
+#nav-sidebar {
+  background: #0a0a0a;
+  border-right: 1px solid #1f1f1f;
+}
+
+#nav-sidebar .current-app .section:link,
+#nav-sidebar .current-app .section:visited {
+  color: #ffffff;
+}
+
+#nav-sidebar .module {
+  border: none;
+  border-bottom: 1px solid #1f1f1f;
+  border-radius: 0;
+  background: transparent;
+}
+
+#nav-sidebar .module caption {
+  background: transparent;
+  border-bottom: 1px solid #1f1f1f;
+  color: #525252;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+}
+
+#nav-sidebar a:link,
+#nav-sidebar a:visited {
+  color: #a3a3a3;
+  padding: 5px 14px;
+  display: block;
+  border-radius: 4px;
+  margin: 1px 6px;
+  font-size: 0.875rem;
+  transition: background 0.1s, color 0.1s;
+}
+
+#nav-sidebar a:hover {
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+/* ── Messages ─────────────────────────────────────────────────── */
+
+ul.messagelist li {
+  border-radius: 6px;
+  font-size: 0.875rem;
+  margin-bottom: 8px;
+}
+
+ul.messagelist li.success { background: var(--message-success-bg); color: #bbf7d0; }
+ul.messagelist li.warning { background: var(--message-warning-bg); color: #fde68a; }
+ul.messagelist li.error   { background: var(--message-error-bg);   color: #fca5a5; }
+
+/* ── Pagination ───────────────────────────────────────────────── */
+
+.paginator {
+  color: #737373;
+  font-size: 0.875rem;
+}
+
+.paginator a:link,
+.paginator a:visited {
+  border: 1px solid #262626;
+  border-radius: 5px;
+  padding: 3px 9px;
+}
+
+.paginator a:hover {
+  background: #1a1a1a;
+  color: #ffffff;
+}
+
+/* ── Filters sidebar ──────────────────────────────────────────── */
+
+#changelist-filter {
+  background: #0a0a0a;
+  border-left: 1px solid #1f1f1f;
+}
+
+#changelist-filter h2 {
+  background: transparent;
+  border-bottom: 1px solid #1f1f1f;
+  color: #525252;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+#changelist-filter h3 {
+  color: #737373;
+  font-size: 0.75rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+#changelist-filter li.selected a {
+  color: #ffffff;
+  font-weight: 500;
+}
+
+/* ── Submit row ───────────────────────────────────────────────── */
+
+.submit-row {
+  background: #0a0a0a;
+  border-top: 1px solid #1f1f1f;
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+  padding: 12px 14px;
+}
+
+/* ── Inline groups ────────────────────────────────────────────── */
+
+.inline-group .module {
+  margin-bottom: 12px;
+}
+
+/* ── Calendar / date widgets ──────────────────────────────────── */
+
+.calendarbox,
+.clockbox {
+  background: #141414;
+  border: 1px solid #262626;
+  border-radius: 8px;
+  color: var(--body-fg);
+}
+
+.calendar td a:hover,
+.timelist a:hover {
+  background: #1a1a1a;
+}
+
+/* ── Scrollbar (webkit) ───────────────────────────────────────── */
+
+::-webkit-scrollbar              { width: 8px; height: 8px; }
+::-webkit-scrollbar-track        { background: #0a0a0a; }
+::-webkit-scrollbar-thumb        { background: #333333; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover  { background: #404040; }

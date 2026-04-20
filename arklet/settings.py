@@ -78,6 +78,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "ark.middleware.RequestLogMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -91,6 +92,7 @@ ROOT_URLCONF = "arklet.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "ark" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -172,6 +174,11 @@ USE_TZ = True
 STATIC_URL = "/static/"
 
 STATIC_ROOT = env.str("ARKLET_STATIC_ROOT")
+
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 
 MEDIA_ROOT = env.str("ARKLET_MEDIA_ROOT")
 
