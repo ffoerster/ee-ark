@@ -188,6 +188,10 @@ Queries up to 100 ARKs at once.
 }
 ```
 
+#### `GET /history?ark=ark:/...&limit=20`
+
+Returns recent change events for an ARK (most recent first). `limit` is optional (default `20`, max `100`).
+
 ### Admin UI
 
 Access `/admin` on the minter to manage API keys, shoulders, NAANs, and administrator accounts. Protected by username/password authentication.

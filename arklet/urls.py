@@ -26,6 +26,7 @@ minterpatterns = [
     path("bulk_query", views.batch_query_arks, name="bulk_query"),
     path("bulk_update", views.batch_update_arks, name="bulk_update"),
     path("bulk_mint", views.batch_mint_arks, name="bulk_mint"),
+    path("history", views.history_ark, name="history_ark"),
     path("admin/", admin.site.urls),
     path("healthcheck", views.health_check, name="healthcheck"),
 ]

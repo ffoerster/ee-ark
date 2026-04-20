@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from ark.models import Ark, Key, Naan, Shoulder
+from ark.models import Ark, ArkEvent, Key, Naan, Shoulder
 from ark.utils import parse_ark
 
 
@@ -94,6 +94,13 @@ class TestMintArk:
         """mint_ark succeeds on the happy path."""
         res = client.post(**asdict(mint_ark_args))
         self._validate_success(mint_ark_args, res)
+        minted_ark = parse_ark(res.json()["ark"])[1:]
+        naan, assigned_name = minted_ark
+        ark_obj = Ark.objects.get(ark=f"{naan}/{assigned_name}")
+        assert ArkEvent.objects.filter(
+            ark=ark_obj,
+            event_type=ArkEvent.EVENT_MINT,
+        ).exists()
 
     @pytest.mark.django_db
     def test_post_only(self, client, mint_ark_args) -> None:
@@ -511,3 +518,26 @@ class TestBatchQueryArks:
         assert res.status_code == 200
         results = res.json()
         assert any(r["ark"] == ark.ark for r in results)
+
+
+class TestArkHistory:
+    @pytest.mark.django_db
+    def test_returns_event_history(self, client, ark) -> None:
+        ArkEvent.objects.create(
+            ark=ark,
+            event_type=ArkEvent.EVENT_UPDATE,
+            diff_json={"title": {"from": "", "to": "Updated"}},
+        )
+        res = client.get(f"/history?ark=ark:/{ark.ark}")
+        assert res.status_code == 200
+        body = res.json()
+        assert body["ark"] == f"ark:/{ark.ark}"
+        assert body["count"] == 1
+        assert body["events"][0]["event_type"] == ArkEvent.EVENT_UPDATE
+
+    @pytest.mark.django_db
+    def test_missing_ark_query_param(self, client) -> None:
+        res = client.get("/history")
+        assert res.status_code == 400
+        body = res.json()
+        assert body["code"] == "invalid_payload"

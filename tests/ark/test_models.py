@@ -2,7 +2,7 @@
 
 import pytest
 
-from ark.models import Ark, Key, Naan, Shoulder
+from ark.models import Ark, ArkEvent, Key, Naan, Shoulder
 
 
 @pytest.fixture
@@ -106,3 +106,16 @@ class TestArk:
         assert ark.state == "tombstoned"
         assert ark.replaced_by == "ark:/12345/replacement"
         assert ark.tombstone_reason == "Removed"
+
+
+class TestArkEvent:
+    @pytest.mark.django_db
+    def test_event_str(self, naan, shoulder):
+        ark = Ark.create(naan, shoulder)
+        ark.save()
+        event = ArkEvent.objects.create(
+            ark=ark,
+            event_type=ArkEvent.EVENT_MINT,
+            diff_json={"created": {"url": "https://example.com"}},
+        )
+        assert "mint" in str(event)

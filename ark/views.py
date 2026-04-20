@@ -17,12 +17,27 @@ from django.shortcuts import render
 from django_ratelimit.decorators import ratelimit
 
 from ark.forms import MintArkForm, UpdateArkForm
-from ark.models import Ark, Naan, Key, Shoulder
+from ark.models import Ark, ArkEvent, Key, Naan, Shoulder
 from ark.utils import parse_ark, gen_prefixes, parse_ark_lookup
 
 COLLISIONS = 10
 
 logger = logging.getLogger(__name__)
+
+EVENT_FIELDS = [
+    "url",
+    "title",
+    "type",
+    "commitment",
+    "identifier",
+    "format",
+    "relation",
+    "source",
+    "metadata",
+    "state",
+    "replaced_by",
+    "tombstone_reason",
+]
 
 
 def request_id_for(request: HttpRequest) -> str:
@@ -48,6 +63,29 @@ def error_response(
     )
 
 
+def event_snapshot(ark: Ark):
+    return {field: getattr(ark, field) for field in EVENT_FIELDS}
+
+
+def event_diff(before: dict, after: dict):
+    return {
+        field: {"from": before.get(field), "to": after.get(field)}
+        for field in EVENT_FIELDS
+        if before.get(field) != after.get(field)
+    }
+
+
+def create_ark_event(request: HttpRequest, ark_obj: Ark, event_type: str, diff: dict):
+    actor_key = getattr(request, "authorized_key", None)
+    ArkEvent.objects.create(
+        ark=ark_obj,
+        event_type=event_type,
+        actor_key_hash=getattr(actor_key, "key", ""),
+        ip=request.META.get("REMOTE_ADDR", ""),
+        diff_json=diff,
+    )
+
+
 def authorize(request, naan):
     bearer_token = request.headers.get("Authorization")
     if not bearer_token:
@@ -59,7 +97,7 @@ def authorize(request, naan):
         keys = Key.objects.filter(naan=naan, active=True)
         for k in keys:
             if k.check_password(key):
-                return k.naan
+                return k
         return None
     except ValidationError as e:  # probably an invalid key
         return None
@@ -101,14 +139,16 @@ def mint_ark(request):
     # Pop these keys so that we can pass the cleaned data
     # dict directly to the create method later
     naan = mint_request.cleaned_data.pop("naan")
-    authorized_naan = authorize(request, naan)
-    if authorized_naan is None:
+    authorized_key = authorize(request, naan)
+    if authorized_key is None:
         return error_response(
             request,
             status=403,
             code="forbidden",
             message="Invalid or missing authorization key",
         )
+    request.authorized_key = authorized_key
+    authorized_naan = authorized_key.naan
 
     shoulder = mint_request.cleaned_data.pop("shoulder")
     shoulder_obj = Shoulder.objects.filter(shoulder=shoulder).first()
@@ -142,6 +182,13 @@ def mint_ark(request):
         )
     if ark and collisions > 0:
         logger.warning("Ark created after %d collision(s)", collisions)
+
+    create_ark_event(
+        request,
+        ark,
+        ArkEvent.EVENT_MINT,
+        {"created": event_snapshot(ark)},
+    )
 
     logger.info(
         "mint naan=%s ark=%s ip=%s",
@@ -192,14 +239,16 @@ def update_ark(request):
 
     _, naan, assigned_name = parse_ark(ark)
 
-    authorized_naan = authorize(request, naan)
-    if authorized_naan is None:
+    authorized_key = authorize(request, naan)
+    if authorized_key is None:
         return error_response(
             request,
             status=403,
             code="forbidden",
             message="Invalid or missing authorization key",
         )
+    request.authorized_key = authorized_key
+    authorized_naan = authorized_key.naan
 
     try:
         ark_obj = Ark.objects.get(ark=f"{naan}/{assigned_name}")
@@ -211,8 +260,11 @@ def update_ark(request):
             message=f"ARK {ark} was not found",
         )
 
+    before = event_snapshot(ark_obj)
     ark_obj.set_fields(update_request.cleaned_data)
     ark_obj.save()
+    diff = event_diff(before, event_snapshot(ark_obj))
+    create_ark_event(request, ark_obj, ArkEvent.EVENT_UPDATE, diff)
 
     logger.info(
         "update naan=%s ark=%s ip=%s",
@@ -451,14 +503,15 @@ def batch_update_arks(request):
         )
 
     naan = naans.pop()
-    authorized_naan = authorize(request, naan)
-    if authorized_naan is None:
+    authorized_key = authorize(request, naan)
+    if authorized_key is None:
         return error_response(
             request,
             status=403,
             code="forbidden",
             message="Invalid or missing authorization key",
         )
+    request.authorized_key = authorized_key
 
     try:
         arks = [parse_ark_lookup(d.get("ark")) for d in data]
@@ -476,20 +529,38 @@ def batch_update_arks(request):
     seen_fields = set()
     to_update = []
     missing = []
+    event_rows = []
     for new_record in data:
         ark = parse_ark_lookup(new_record["ark"])
         ark_obj = ark_lookup.get(ark)
         if ark_obj is None:
             missing.append(new_record["ark"])
             continue
+        before = event_snapshot(ark_obj)
         ark_obj.set_fields(new_record)
+        diff = event_diff(before, event_snapshot(ark_obj))
         seen_fields.update(new_record.keys())
         to_update.append(ark_obj)
+        event_rows.append((ark_obj, diff))
     # don't update primary key
     seen_fields.discard("ark")
     n_updated = 0
     if to_update and seen_fields:
         n_updated = Ark.objects.bulk_update(to_update, fields=seen_fields)
+        actor_key_hash = getattr(request.authorized_key, "key", "")
+        ip = request.META.get("REMOTE_ADDR", "")
+        ArkEvent.objects.bulk_create(
+            [
+                ArkEvent(
+                    ark=ark_obj,
+                    event_type=ArkEvent.EVENT_BATCH_UPDATE,
+                    actor_key_hash=actor_key_hash,
+                    ip=ip,
+                    diff_json=diff,
+                )
+                for ark_obj, diff in event_rows
+            ]
+        )
     logger.info(
         "batch_update naan=%s count=%d ip=%s",
         naan,
@@ -520,14 +591,16 @@ def batch_mint_arks(request):
         )
 
     naan = data.get("naan")
-    authorized_naan = authorize(request, naan)
-    if authorized_naan is None:
+    authorized_key = authorize(request, naan)
+    if authorized_key is None:
         return error_response(
             request,
             status=403,
             code="forbidden",
             message="Invalid or missing authorization key",
         )
+    request.authorized_key = authorized_key
+    authorized_naan = authorized_key.naan
     records = data.get("data")
     if not isinstance(records, list):
         return error_response(
@@ -597,12 +670,88 @@ def batch_mint_arks(request):
         len(created),
         request.META.get("REMOTE_ADDR"),
     )
+    actor_key_hash = getattr(request.authorized_key, "key", "")
+    ip = request.META.get("REMOTE_ADDR", "")
+    ArkEvent.objects.bulk_create(
+        [
+            ArkEvent(
+                ark=ark_obj,
+                event_type=ArkEvent.EVENT_BATCH_MINT,
+                actor_key_hash=actor_key_hash,
+                ip=ip,
+                diff_json={"created": event_snapshot(ark_obj)},
+            )
+            for ark_obj in created
+        ]
+    )
     return JsonResponse(
         {
             "num_received": len(records),
             "arks_created": [ark_to_json(c, metadata=False) for c in created],
         }
     )
+
+
+@ratelimit(key="ip", rate="60/m", block=True)
+def history_ark(request):
+    if request.method != "GET":
+        return error_response(
+            request,
+            status=405,
+            code="method_not_allowed",
+            message="Only GET is allowed for this endpoint",
+            details={"allowed_methods": ["GET"]},
+        )
+
+    ark = request.GET.get("ark")
+    if not ark:
+        return error_response(
+            request,
+            status=400,
+            code="invalid_payload",
+            message="Query parameter 'ark' is required",
+        )
+
+    try:
+        ark_lookup = parse_ark_lookup(ark)
+    except ValueError as e:
+        return error_response(
+            request,
+            status=400,
+            code="invalid_ark",
+            message=str(e),
+        )
+
+    try:
+        limit = int(request.GET.get("limit", 20))
+    except ValueError:
+        return error_response(
+            request,
+            status=400,
+            code="invalid_payload",
+            message="Query parameter 'limit' must be an integer",
+        )
+
+    if limit < 1 or limit > 100:
+        return error_response(
+            request,
+            status=400,
+            code="invalid_payload",
+            message="Query parameter 'limit' must be between 1 and 100",
+        )
+
+    events = ArkEvent.objects.filter(ark_id=ark_lookup).order_by("-created_at")[:limit]
+    payload = [
+        {
+            "event_type": event.event_type,
+            "created_at": event.created_at.isoformat(),
+            "actor_key_hash": event.actor_key_hash,
+            "ip": event.ip,
+            "diff": event.diff_json,
+        }
+        for event in events
+    ]
+    return JsonResponse({"ark": f"ark:/{ark_lookup}", "count": len(payload), "events": payload})
 
 
 def status(request):

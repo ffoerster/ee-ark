@@ -1,7 +1,7 @@
 """Django Admin models for Arklet."""
 
 from django.contrib import admin, messages
-from ark.models import Ark, Key, Naan, Shoulder, User
+from ark.models import Ark, ArkEvent, Key, Naan, Shoulder, User
 
 
 @admin.register(User)
@@ -50,3 +50,18 @@ class KeyAdmin(admin.ModelAdmin):
             request,
             f"Your new API key is {api_key}. Write this down in a secure location!",
         )
+
+
+@admin.register(ArkEvent)
+class ArkEventAdmin(admin.ModelAdmin):
+    list_display = ["created_at", "event_type", "ark", "ip"]
+    list_filter = ["event_type", "created_at"]
+    search_fields = ["ark__ark", "ip"]
+    readonly_fields = [
+        "ark",
+        "event_type",
+        "actor_key_hash",
+        "ip",
+        "diff_json",
+        "created_at",
+    ]

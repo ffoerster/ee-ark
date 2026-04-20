@@ -167,3 +167,32 @@ class Ark(models.Model):
 
     def __str__(self):
         return f"ark:/{self.ark}"
+
+
+class ArkEvent(models.Model):
+    EVENT_MINT = "mint"
+    EVENT_UPDATE = "update"
+    EVENT_BATCH_MINT = "batch_mint"
+    EVENT_BATCH_UPDATE = "batch_update"
+
+    EVENT_CHOICES = [
+        (EVENT_MINT, "mint"),
+        (EVENT_UPDATE, "update"),
+        (EVENT_BATCH_MINT, "batch_mint"),
+        (EVENT_BATCH_UPDATE, "batch_update"),
+    ]
+
+    ark = models.ForeignKey(Ark, on_delete=models.CASCADE, related_name="events")
+    event_type = models.CharField(max_length=32, choices=EVENT_CHOICES)
+    actor_key_hash = models.CharField(max_length=4096, default="", blank=True)
+    ip = models.GenericIPAddressField(default="", blank=True, null=True)
+    diff_json = models.JSONField(default=dict, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ark", "-created_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.event_type} {self.ark} @ {self.created_at.isoformat()}"
