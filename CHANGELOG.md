@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.3.0](https://github.com/ffoerster/ee-ark/compare/v0.2.0...v0.3.0) (2026-04-20)
+
+
+### Features
+
+* add custom admin theme and integrate Whitenoise for static file handling ([a0434aa](https://github.com/ffoerster/ee-ark/commit/a0434aa5d6c5486cad208bbcc2ec909760d91d2f))
+* add healthcheck configuration for arklet services in Docker Compose ([58a4bf6](https://github.com/ffoerster/ee-ark/commit/58a4bf64f81aab7538c65101596e7dd478d2696a))
+* add tombstone support to ARK model and update related views, forms, and templates ([1d167c4](https://github.com/ffoerster/ee-ark/commit/1d167c40476597390de83971b6fdc5165a5ffabe))
+* enhance ARK API with improved request handling, tombstone support, and history retrieval ([069dc48](https://github.com/ffoerster/ee-ark/commit/069dc486ddac9d7f01ae9d8d468b42400a615c8f))
+* enhance ArkAdmin with additional list display, filtering, and readonly fields; update migration index formatting; improve JSON response formatting in history_ark view ([d5f9a38](https://github.com/ffoerster/ee-ark/commit/d5f9a38ebfa6154eed2b60f4e4b33692b337f98b))
+* enhance error handling in ARK endpoints with consistent JSON responses and request IDs ([ccc3cac](https://github.com/ffoerster/ee-ark/commit/ccc3cacce0be8291010e61ea47a13031aa196e19))
+* implement ARK event logging and history retrieval endpoint ([9f821c5](https://github.com/ffoerster/ee-ark/commit/9f821c5ad4a85995abbb99215159237591424e27))
+
+
+### Bug Fixes
+
+* format staticfiles storage configuration for readability ([f670445](https://github.com/ffoerster/ee-ark/commit/f6704458351f23fe9974bef0bd36c3b7368f82d2))
+* update healthcheck URLs in docker-compose to use 127.0.0.1 ([0488162](https://github.com/ffoerster/ee-ark/commit/04881622b5c9f4d635b3f26b83200efc1ef316f3))
+
 ## [0.2.0](https://github.com/ffoerster/ee-ark/compare/v0.1.0...v0.2.0) (2026-04-20)
 
 
