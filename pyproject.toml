@@ -1,6 +1,6 @@
 [project]
 name = "ee-ark"
-version = "0.1.0"
+version = "0.2.0"
 description = "A Python/Django application for minting, binding, and resolving ARK identifiers"
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
