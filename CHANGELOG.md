@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.2.0](https://github.com/ffoerster/ee-ark/compare/v0.1.0...v0.2.0) (2026-04-20)
+
+
+### Features
+
+* enhance ARK CLI with rich console output and refactor request handling ([1a34401](https://github.com/ffoerster/ee-ark/commit/1a34401ccda3453c8a50f8804d6d7cf768ec0372))
+* upgrade Python version to 3.12, add request logging middleware, and implement rate limiting ([288e312](https://github.com/ffoerster/ee-ark/commit/288e312c5a0db21dc9c1f34ac4e43205cd5626b6))
+
+
+### Bug Fixes
+
+* update dependencies in poetry.lock and remove obsolete packages ([444b84e](https://github.com/ffoerster/ee-ark/commit/444b84e94fde55758b79b590be39adbadb3368a5))
+* update requests package version to 2.32.4 ([18830a3](https://github.com/ffoerster/ee-ark/commit/18830a316e69f590db2792a92b6c775505d362b8))
+
 ## 0.1.0 (2026-04-20)
 
 
