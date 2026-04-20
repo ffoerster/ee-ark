@@ -1,5 +1,4 @@
-"""Django Admin command to mint a test ARK 
-"""
+"""Django Admin command to mint a test ARK"""
 
 from django.core.management.base import BaseCommand
 from django.db import transaction

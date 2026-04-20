@@ -1,5 +1,5 @@
-"""Django Admin command to count ARKs under 
-the given naan 
+"""Django Admin command to count ARKs under
+the given naan
 """
 
 from django.core.management.base import BaseCommand

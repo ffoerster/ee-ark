@@ -1,4 +1,4 @@
-"""Django Admin command to fetch random ARKs under 
+"""Django Admin command to fetch random ARKs under
 the given naan and shoulder
 """
 

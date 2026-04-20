@@ -1,4 +1,4 @@
-"""Django Admin command to delete all ARKs under 
+"""Django Admin command to delete all ARKs under
 the given naan and shoulder
 """
 
