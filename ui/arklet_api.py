@@ -12,7 +12,17 @@ console = Console()
 
 DEFAULT_URL = os.environ.get("ARK_API_URL", "http://127.0.0.1:8001")
 
-METADATA_FIELDS = ["url", "title", "type", "commitment", "identifier", "format", "relation", "source", "metadata"]
+METADATA_FIELDS = [
+    "url",
+    "title",
+    "type",
+    "commitment",
+    "identifier",
+    "format",
+    "relation",
+    "source",
+    "metadata",
+]
 
 
 class ArkAPIError(click.ClickException):
@@ -46,7 +56,9 @@ def _csv2json(path):
 
 
 def _metadata_table(data: dict, title: str = "") -> Table:
-    table = Table(box=box.ROUNDED, show_header=True, header_style="bold cyan", title=title)
+    table = Table(
+        box=box.ROUNDED, show_header=True, header_style="bold cyan", title=title
+    )
     table.add_column("Field", style="dim")
     table.add_column("Value")
     for key, val in data.items():
@@ -56,12 +68,24 @@ def _metadata_table(data: dict, title: str = "") -> Table:
     return table
 
 
-def _metadata_kwargs(url, title, type_, commitment, identifier, format_, relation, source, metadata):
-    return {k: v for k, v in {
-        "url": url, "title": title, "type": type_, "commitment": commitment,
-        "identifier": identifier, "format": format_, "relation": relation,
-        "source": source, "metadata": metadata,
-    }.items() if v is not None}
+def _metadata_kwargs(
+    url, title, type_, commitment, identifier, format_, relation, source, metadata
+):
+    return {
+        k: v
+        for k, v in {
+            "url": url,
+            "title": title,
+            "type": type_,
+            "commitment": commitment,
+            "identifier": identifier,
+            "format": format_,
+            "relation": relation,
+            "source": source,
+            "metadata": metadata,
+        }.items()
+        if v is not None
+    }
 
 
 def _metadata_options(f):
@@ -111,20 +135,49 @@ def query(ark):
 @click.option("--naan", required=True, type=int, help="Name Assigning Authority Number")
 @click.option("--shoulder", required=True, help="Shoulder (e.g. /t)")
 @_metadata_options
-def mint(naan, shoulder, url, title, type, commitment, identifier, format, relation, source, metadata):
+def mint(
+    naan,
+    shoulder,
+    url,
+    title,
+    type,
+    commitment,
+    identifier,
+    format,
+    relation,
+    source,
+    metadata,
+):
     """Mint a new ARK identifier."""
-    payload = {"naan": naan, "shoulder": shoulder, **_metadata_kwargs(url, title, type, commitment, identifier, format, relation, source, metadata)}
+    payload = {
+        "naan": naan,
+        "shoulder": shoulder,
+        **_metadata_kwargs(
+            url, title, type, commitment, identifier, format, relation, source, metadata
+        ),
+    }
     data = _authed("post", "mint", payload)
     ark = data.get("ark", "?")
-    console.print(Panel(f"[bold green]{ark}[/bold green]", title="Minted ARK", border_style="green"))
+    console.print(
+        Panel(
+            f"[bold green]{ark}[/bold green]", title="Minted ARK", border_style="green"
+        )
+    )
 
 
 @cli.command()
 @click.option("--ark", required=True, help="ARK identifier to update")
 @_metadata_options
-def update(ark, url, title, type, commitment, identifier, format, relation, source, metadata):
+def update(
+    ark, url, title, type, commitment, identifier, format, relation, source, metadata
+):
     """Update an existing ARK identifier."""
-    payload = {"ark": ark, **_metadata_kwargs(url, title, type, commitment, identifier, format, relation, source, metadata)}
+    payload = {
+        "ark": ark,
+        **_metadata_kwargs(
+            url, title, type, commitment, identifier, format, relation, source, metadata
+        ),
+    }
     data = _authed("put", "update", payload)
     console.print(_metadata_table(data, title=f"[bold]Updated: {ark}[/bold]"))
 
@@ -162,13 +215,20 @@ def bulk_mint(naan, csv_file):
     with console.status(f"Minting {len(rows)} ARKs…"):
         data = _authed("post", "bulk_mint", {"naan": naan, "data": rows})
     created = data.get("arks_created", [])
-    table = Table(box=box.SIMPLE_HEAD, show_header=True, header_style="bold cyan", title="Minted ARKs")
+    table = Table(
+        box=box.SIMPLE_HEAD,
+        show_header=True,
+        header_style="bold cyan",
+        title="Minted ARKs",
+    )
     table.add_column("ARK")
     table.add_column("URL")
     for ark in created:
         table.add_row(ark.get("ark", ""), ark.get("url", ""))
     console.print(table)
-    console.print(f"[green]✓[/green] {len(created)} of {data.get('num_received', '?')} minted")
+    console.print(
+        f"[green]✓[/green] {len(created)} of {data.get('num_received', '?')} minted"
+    )
 
 
 @bulk.command("update")
@@ -178,7 +238,9 @@ def bulk_update(csv_file):
     rows = _csv2json(csv_file)
     with console.status(f"Updating {len(rows)} ARKs…"):
         data = _authed("post", "bulk_update", {"data": rows})
-    console.print(f"[green]✓[/green] {data.get('num_updated')} of {data.get('num_received')} updated")
+    console.print(
+        f"[green]✓[/green] {data.get('num_updated')} of {data.get('num_received')} updated"
+    )
 
 
 if __name__ == "__main__":

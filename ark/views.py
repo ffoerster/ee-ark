@@ -92,7 +92,12 @@ def mint_ark(request):
     if ark and collisions > 0:
         logger.warning("Ark created after %d collision(s)", collisions)
 
-    logger.info("mint naan=%s ark=%s ip=%s", authorized_naan, ark, request.META.get("REMOTE_ADDR"))
+    logger.info(
+        "mint naan=%s ark=%s ip=%s",
+        authorized_naan,
+        ark,
+        request.META.get("REMOTE_ADDR"),
+    )
     return JsonResponse({"ark": str(ark)})
 
 
@@ -131,7 +136,12 @@ def update_ark(request):
     ark_obj.set_fields(update_request.cleaned_data)
     ark_obj.save()
 
-    logger.info("update naan=%s ark=%s ip=%s", authorized_naan, ark, request.META.get("REMOTE_ADDR"))
+    logger.info(
+        "update naan=%s ark=%s ip=%s",
+        authorized_naan,
+        ark,
+        request.META.get("REMOTE_ADDR"),
+    )
     return JsonResponse(ark_to_json(ark_obj, metadata=False))
 
 
@@ -282,7 +292,12 @@ def batch_update_arks(request):
     # don't update primary key
     seen_fields.remove("ark")
     n_updated = Ark.objects.bulk_update(ark_objs, fields=seen_fields)
-    logger.info("batch_update naan=%s count=%d ip=%s", naan, n_updated, request.META.get("REMOTE_ADDR"))
+    logger.info(
+        "batch_update naan=%s count=%d ip=%s",
+        naan,
+        n_updated,
+        request.META.get("REMOTE_ADDR"),
+    )
     return JsonResponse({"num_received": len(data), "num_updated": n_updated})
 
 
@@ -335,7 +350,12 @@ def batch_mint_arks(request):
         msg = f"Gave up creating bulk arks after {COLLISIONS} collision(s)"
         logger.error(msg)
         return HttpResponseServerError(msg)
-    logger.info("batch_mint naan=%s count=%d ip=%s", naan, len(created), request.META.get("REMOTE_ADDR"))
+    logger.info(
+        "batch_mint naan=%s count=%d ip=%s",
+        naan,
+        len(created),
+        request.META.get("REMOTE_ADDR"),
+    )
     return JsonResponse(
         {
             "num_received": len(records),
@@ -362,4 +382,6 @@ def health_check(request):
     except Exception:
         db_ok = False
     status_code = 200 if db_ok else 503
-    return JsonResponse({"status": "ok" if db_ok else "degraded", "db": db_ok}, status=status_code)
+    return JsonResponse(
+        {"status": "ok" if db_ok else "degraded", "db": db_ok}, status=status_code
+    )

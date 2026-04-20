@@ -381,7 +381,9 @@ class TestBatchUpdateArks:
 
     @pytest.mark.django_db
     def test_exceeds_max_rows(self, client, naan, shoulder, auth) -> None:
-        records = [{"ark": f"ark:/{naan.naan}{shoulder.shoulder}fake{i}"} for i in range(101)]
+        records = [
+            {"ark": f"ark:/{naan.naan}{shoulder.shoulder}fake{i}"} for i in range(101)
+        ]
         res = client.post(
             "/bulk_update",
             data={"data": records},

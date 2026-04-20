@@ -11,6 +11,7 @@ class TestValidateShoulder:
 
     def test_invalid_shoulder_raises(self):
         from django.core.exceptions import ValidationError
+
         with pytest.raises(ValidationError):
             validate_shoulder("t")
 
@@ -21,13 +22,15 @@ class TestMintArkForm:
         assert form.is_valid(), form.errors
 
     def test_valid_with_optional_fields(self):
-        form = MintArkForm({
-            "naan": 12345,
-            "shoulder": "/t",
-            "url": "https://example.com",
-            "title": "A Title",
-            "type": "Text",
-        })
+        form = MintArkForm(
+            {
+                "naan": 12345,
+                "shoulder": "/t",
+                "url": "https://example.com",
+                "title": "A Title",
+                "type": "Text",
+            }
+        )
         assert form.is_valid(), form.errors
 
     def test_missing_naan_invalid(self):

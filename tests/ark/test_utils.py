@@ -2,7 +2,14 @@
 
 import pytest
 
-from ark.utils import BETANUMERIC, gen_prefixes, generate_noid, noid_check_digit, parse_ark, parse_ark_lookup
+from ark.utils import (
+    BETANUMERIC,
+    gen_prefixes,
+    generate_noid,
+    noid_check_digit,
+    parse_ark,
+    parse_ark_lookup,
+)
 
 
 class TestGenerateNoid:

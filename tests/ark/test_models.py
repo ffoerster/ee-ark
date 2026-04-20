@@ -7,12 +7,16 @@ from ark.models import Ark, Key, Naan, Shoulder
 
 @pytest.fixture
 def naan(db):
-    return Naan.objects.create(naan=99001, name="Test Org", description="desc", url="https://example.com")
+    return Naan.objects.create(
+        naan=99001, name="Test Org", description="desc", url="https://example.com"
+    )
 
 
 @pytest.fixture
 def shoulder(db, naan):
-    return Shoulder.objects.create(shoulder="/s", naan=naan, name="Test", description="desc")
+    return Shoulder.objects.create(
+        shoulder="/s", naan=naan, name="Test", description="desc"
+    )
 
 
 class TestNaan:
@@ -54,8 +58,11 @@ class TestShoulder:
     @pytest.mark.django_db
     def test_unique_together(self, naan, shoulder):
         from django.db import IntegrityError
+
         with pytest.raises(IntegrityError):
-            Shoulder.objects.create(shoulder="/s", naan=naan, name="Dup", description="dup")
+            Shoulder.objects.create(
+                shoulder="/s", naan=naan, name="Dup", description="dup"
+            )
 
 
 class TestArk:
