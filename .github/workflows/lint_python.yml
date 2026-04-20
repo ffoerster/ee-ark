@@ -35,4 +35,4 @@ jobs:
           . .safety-venv/bin/activate
           pip install --upgrade pip
           pip install "safety<3"
-          safety check -r requirements.txt --ignore 70612 || true
+          safety check -r requirements.txt --ignore 70612
