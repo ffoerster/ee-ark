@@ -1,5 +1,3 @@
-version: "3.7"
-
 services:
   arklet-minter:
     container_name: arklet_minter

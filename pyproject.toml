@@ -47,7 +47,7 @@ postgres = ["psycopg2"]
 sentry = ["sentry-sdk"]
 environ = ["django-environ"]
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 black = "^22.3.0"
 pylint = "^2.14.1"
 isort = "^5.10.1"

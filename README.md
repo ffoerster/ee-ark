@@ -1,167 +1,154 @@
-# squidgetx/arklet: A basic ARK resolver
+# ee-ark
 
-Fork of the [Internet Archive Arklet](https://github.com/internetarchive/arklet/)
-Python Django application for minting, binding, and resolving ARKs
-with additional features, improved security and bugfixes.
+> A Python/Django application for minting, binding, and resolving [ARK identifiers](https://arks.org/). Used for the [Electric Echoes Flyer Archive](https://beta.electric-echoes.org/), but designed to be reusable for other projects.
 
-In use by the Frick Museum in New York ([Fork Link](https://github.com/frickdahl/arklet-frick))
+Fork of [squidgetx/arklet](https://github.com/squidgetx/arklet), which is itself a fork of the [Internet Archive Arklet](https://github.com/internetarchive/arklet/).
 
+Licensed under the [MIT License](LICENSE).
 
-It is intended to follow best practices set out by https://arks.org/.
-| |squidgetx/arklet| internetarchive/arklet |
-|-|------------- | ------------- |
-|ARK resolution|x|x|
-|ARK minting and editing|x|x|
-|Bulk minting and editing|x||
-|Suffix passthrough|x||
-|Separate minter and resolver|x||
-|API access key hashing|x||
-|Shoulder rules|x||
-|Extensive metadata|x||
-|?info and ?json endpoints|x||
+---
 
-This code is licensed with the MIT open source license.
+## Features
 
-# Overview
+| Feature | ee-ark / squidgetx | internetarchive |
+| --- | :---: | :---: |
+| ARK resolution | ✓ | ✓ |
+| ARK minting and editing | ✓ | ✓ |
+| Bulk minting and editing | ✓ | |
+| Suffix passthrough | ✓ | |
+| Separate minter and resolver | ✓ | |
+| API access key hashing | ✓ | |
+| Shoulder rules | ✓ | |
+| Extensive metadata | ✓ | |
+| `?info` and `?json` endpoints | ✓ | |
 
-The Arklet service consists of four major components.
+---
 
-1. SQL Database which stores ARK identifiers and related metadata
-2. Python Django web application (resolver) which allows users to input URLs containing ARK identifiers and be automatically redirected to the associated resource URL (or alternatively, to receive information about the resource using the `?info` or `?json` suffixes)
-3. Python Django web application (minter) which allows administrators to manage the ARK system through both a web API (to mint and edit ARKs) and a graphical web user interface (to manage access tokens and shoulders). The minter can also function as a resolver.
-4. Python command line tool (ui/api.py) which allows users to mint and edit ARKs using a command line interface.
+## Architecture
 
-The repository comes pre-configured with Docker development and production settings to manage all three components. See the Setup section for more details.
+The service consists of four components:
 
-# Usage
+- **Database** — PostgreSQL storing ARK identifiers and metadata
+- **Resolver** — Django web app that redirects ARK URLs to their target resources. Unknown ARKs are forwarded to [n2t.net](https://n2t.net).
+- **Minter** — Django web app with a REST API and admin UI for creating and managing ARKs. Can also act as a resolver.
+- **CLI** — Command line tools in [`/ui`](ui/) for scripting against the API.
 
-## ARK resolution API (resolver and minter)
+The repo is pre-configured with Docker for both local development and production.
 
-`GET /ark://1234/a0test` redirects to the URL associated with the given ARK ID, a 404 if the given ARK is in the system but no URL is associated with it, and forwards the request to n2t.net if no ARK record matching the given ID is found at all.
+---
 
-`GET /ark://1234/a0test?info` returns a human readable HTML response with all extra metadata stored in the database and 404 if no matching record is found.
+## Setup
 
-`GET /ark://1234/a0test?json` returns a pure JSON response of all extra metadata stored in the database and 404 if no matching record is found.
+### Local Development
 
-`GET /ark://1234/a0test/<suffix>` and `GET /ark://1234/a0test?<suffix>` redirect to the URL associated with the given ARK ID and 'pass through' the suffix to the final destination URL.
-
-## ARK management API (minter only)
-
-ARK management endpoints additionally require an `Authorization` header with a valid API key. API keys can be provisioned by the administrator in the arklet admin user interface and are tied to NAANs.
-
-`POST /mint` mints an ARK described by JSON in the request body. Request parameters:
-
-```
-naan
-shoulder
-url (optional)
-metadata (optional)
-title (optional)
-type (optional)
-commitment (optional)
-identifier (optional)
-format (optional)
-relation (optional)
-source (optional)
+```bash
+docker-compose up
 ```
 
-Returns a JSON response with the minted ark identifier (string). ARKs cannot be minted if the provided shoulder does not exist. The administrator must manage shoulders using the arklet admin user interface.
+Starts PostgreSQL, the minter (`127.0.0.1:8001`), and the resolver (`127.0.0.1:8000`). Environment config lives in `docker/env.local`. Port changes also require updating `docker-compose.yml`.
 
-`PUT /update` updates an ARK described by JSON in the request body. Request parameters:
+**Create the first superuser:**
 
-```
-ark
-url (optional)
-metadata (optional)
-title (optional)
-type (optional)
-commitment (optional)
-identifier (optional)
-format (optional)
-relation (optional)
-source (optional)
-```
-
-Returns an empty 200 response if update is successful.
-
-`POST /bulk_update` update several ARK at once described by JSON in the request body. The request body should be a JSON object with one key (`data`) whose value is an array of objects containing the fields to be updated:
-
-```
-ark
-url (optional)
-metadata (optional)
-title (optional)
-type (optional)
-commitment (optional)
-identifier (optional)
-format (optional)
-relation (optional)
-source (optional)
-```
-
-The maximum number of records that can be updated at once is 100.
-
-`POST /bulk_mint` mints several ARK at once described by JSON in the request body. The request body should be a JSON object with one key (`naan`) which is the NAAN under which the ARKs should be created, and one key (`data`) whose value is an array of objects containing the fields to be updated:
-
-```
-shoulder (required)
-url (optional)
-metadata (optional)
-title (optional)
-type (optional)
-commitment (optional)
-identifier (optional)
-format (optional)
-relation (optional)
-source (optional)
-```
-
-The maximum number of records that can be minted at once is 100.
-
-`POST /bulk_query` queries several ARK at once described by JSON in the request body. The request body should be a JSON object with one key (`data`) which is an array of objects each with one key (`ark`).
-
-The maximum number of records that can be queried at once is 100.
-
-Python command line tools are available in the `/ui` subdirectory for interacting with the API.
-
-## Admin User Interface
-
-Administrators can access the `/admin` user interface of the minter to manage API access keys, shoulders, NAANs, and other administrators. Administrator access is protected using standard username and password authentication. The first administrator account must be set up when initially deploying the application.
-
-# Setup
-
-## Local
-
-Use `docker-compose up` to automatically launch the `postgres` database, the `arklet-minter` component, and the `arklet-resolver` component. By default, the minter runs on 127.0.0.1:8001 and the resolver runs on 127.0.0.1:8000.
-
-Configuration for the local environment can be found in the `docker/env.local` envfile. Note that if you wish to change the ports you also need to update the port forwarding configuration in `docker-compose.yml`.
-
-### Creating a Superuser
-
-You need to create the first user with admin privileges from the command line in order to properly set up the application.
-
-```
-make dev-cmd
-```
-
-launches a bash shell in the minter container.
-
-```
+```bash
+make dev-cmd          # opens a shell in the minter container
 ./manage.py createsuperuser
 ```
 
-creates the superuser
+Then open `http://127.0.0.1:8001/admin` to create a NAAN and an API key.
 
-### Admin Panel Setup
+### Production
 
-To continue the setup, you can access the Admin panel via web browser at `127.0.0.1:8000/admin`.
+The repo is pre-configured for nginx + gunicorn with a managed Postgres instance (e.g. a DigitalOcean droplet + managed database).
 
-Create a NAAN and an associated API key.
+1. Copy `env.prod.example` → `env.prod` and fill in your Postgres credentials and Django secret key.
+2. Start all services:
 
-## Production
+```bash
+make prod
+# or: docker-compose -f docker-compose.nginx.yml --profile nginx up
+```
 
-This repo is pre-configured for production deployment using nginx, gunicorn, and assuming a managed database instance + general webserver compute instance (eg, Digital Ocean droplet + managed postgres). Nginx and gunicorn replace the development Django server offering improved performance and security.
+By default the resolver runs on port 80 and the minter on port 8080. To change the minter port, update both `docker-compose.nginx.yml` and `nginx.conf`.
 
-Fill in the relevant postgres credentials and a secure Django secret key in `env.prod.example` and rename the file to `env.prod`.
+---
 
-To launch the minter, resolver, and nginx server run `docker-compose -f docker-compose.nginx.yml --profile nginx up`, or simply `make prod`. By default, the resolver runs on port 80 (eg, no need to specify a port number when using the resolver service) and the minter runs on port 8080. If you wish to change the port that the minter is accessed on you must alter the port numbers in both `docker-compose.nginx.yml` as well as `nginx.conf`
+## API Reference
+
+### Resolution (resolver + minter)
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/ark://{naan}/{id}` | Redirect to the target URL, or forward to n2t.net if unknown |
+| `GET` | `/ark://{naan}/{id}?info` | Human-readable HTML metadata page |
+| `GET` | `/ark://{naan}/{id}?json` | JSON metadata response |
+| `GET` | `/ark://{naan}/{id}/{suffix}` | Redirect with suffix passthrough |
+
+### Management (minter only)
+
+All management endpoints require an `Authorization` header with a valid API key. Keys are provisioned in the admin UI and are scoped to NAANs.
+
+#### `POST /mint`
+
+Mints a new ARK.
+
+| Field | Required |
+| --- | :---: |
+| `naan` | ✓ |
+| `shoulder` | ✓ |
+| `url` | |
+| `title` | |
+| `type` | |
+| `commitment` | |
+| `identifier` | |
+| `format` | |
+| `relation` | |
+| `source` | |
+| `metadata` | |
+
+Returns the minted ARK identifier as a JSON string. The shoulder must already exist (managed via the admin UI).
+
+#### `PUT /update`
+
+Updates an existing ARK. Requires `ark`; all other fields from `/mint` are optional. Returns `200` on success.
+
+#### `POST /bulk_mint`
+
+Mints up to 100 ARKs at once.
+
+```json
+{
+  "naan": "12345",
+  "data": [
+    { "shoulder": "s1", "url": "https://example.org/1" },
+    { "shoulder": "s1", "url": "https://example.org/2" }
+  ]
+}
+```
+
+#### `POST /bulk_update`
+
+Updates up to 100 ARKs at once.
+
+```json
+{
+  "data": [
+    { "ark": "ark:/12345/s1abc", "url": "https://example.org/new" }
+  ]
+}
+```
+
+#### `POST /bulk_query`
+
+Queries up to 100 ARKs at once.
+
+```json
+{
+  "data": [
+    { "ark": "ark:/12345/s1abc" }
+  ]
+}
+```
+
+### Admin UI
+
+Access `/admin` on the minter to manage API keys, shoulders, NAANs, and administrator accounts. Protected by username/password authentication.
