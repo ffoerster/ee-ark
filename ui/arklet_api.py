@@ -30,24 +30,54 @@ class ArkAPIError(click.ClickException):
         console.print(f"[bold red]Error:[/bold red] {self.format_message()}")
 
 
-def _request(method, path, **kwargs):
+def _request(method, path, ok_statuses=None, **kwargs):
     url = f"{DEFAULT_URL}/{path}"
     try:
-        response = getattr(requests, method)(url, timeout=10, **kwargs)
+        response = requests.request(method.upper(), url, timeout=10, **kwargs)
     except requests.exceptions.ConnectionError:
         raise ArkAPIError(f"Cannot connect to {DEFAULT_URL}")
     except requests.exceptions.Timeout:
         raise ArkAPIError("Request timed out")
-    if response.status_code == 200:
+
+    if ok_statuses is None:
+        status_ok = 200 <= response.status_code < 300
+    else:
+        status_ok = response.status_code in ok_statuses
+
+    if status_ok:
+        if not response.text.strip():
+            return {}
         return response.json()
-    raise ArkAPIError(f"HTTP {response.status_code}: {response.text.strip()}")
+
+    request_id = response.headers.get("X-Request-ID")
+    try:
+        payload = response.json()
+    except ValueError:
+        payload = None
+
+    if isinstance(payload, dict):
+        code = payload.get("code", "unknown_error")
+        message = payload.get("message", response.text.strip())
+        details = payload.get("details")
+        payload_request_id = payload.get("request_id") or request_id
+        msg = f"HTTP {response.status_code} [{code}] {message}"
+        if details:
+            msg += f" | details: {details}"
+        if payload_request_id:
+            msg += f" | request_id: {payload_request_id}"
+        raise ArkAPIError(msg)
+
+    msg = f"HTTP {response.status_code}: {response.text.strip()}"
+    if request_id:
+        msg += f" | request_id: {request_id}"
+    raise ArkAPIError(msg)
 
 
-def _authed(method, path, data):
+def _authed(method, path, data, **kwargs):
     key = os.environ.get("ARK_API_KEY", "")
     if not key:
         raise ArkAPIError("ARK_API_KEY environment variable is not set")
-    return _request(method, path, json=data, headers={"Authorization": key})
+    return _request(method, path, json=data, headers={"Authorization": key}, **kwargs)
 
 
 def _csv2json(path):
@@ -83,6 +113,18 @@ def _metadata_kwargs(
             "relation": relation,
             "source": source,
             "metadata": metadata,
+        }.items()
+        if v is not None
+    }
+
+
+def _tombstone_kwargs(state, replaced_by, tombstone_reason):
+    return {
+        k: v
+        for k, v in {
+            "state": state,
+            "replaced_by": replaced_by,
+            "tombstone_reason": tombstone_reason,
         }.items()
         if v is not None
     }
@@ -127,7 +169,10 @@ def status():
 @click.option("--ark", required=True, help="ARK identifier (e.g. ark:/12345/abc)")
 def query(ark):
     """Query metadata for a single ARK."""
-    data = _request("get", f"{ark}?json")
+    data = _request("get", f"{ark}?json", ok_statuses={200, 410})
+    state = data.get("state", {}).get("value")
+    if state == "tombstoned":
+        console.print("[yellow]Note:[/yellow] ARK is tombstoned (HTTP 410).")
     console.print(_metadata_table(data, title=f"[bold]{ark}[/bold]"))
 
 
@@ -168,8 +213,28 @@ def mint(
 @cli.command()
 @click.option("--ark", required=True, help="ARK identifier to update")
 @_metadata_options
+@click.option(
+    "--state",
+    type=click.Choice(["active", "tombstoned"]),
+    default=None,
+    help="Resource state",
+)
+@click.option("--replaced-by", default=None, help="Replacement ARK")
+@click.option("--tombstone-reason", default=None, help="Tombstone reason")
 def update(
-    ark, url, title, type, commitment, identifier, format, relation, source, metadata
+    ark,
+    url,
+    title,
+    type,
+    commitment,
+    identifier,
+    format,
+    relation,
+    source,
+    metadata,
+    state,
+    replaced_by,
+    tombstone_reason,
 ):
     """Update an existing ARK identifier."""
     payload = {
@@ -177,9 +242,58 @@ def update(
         **_metadata_kwargs(
             url, title, type, commitment, identifier, format, relation, source, metadata
         ),
+        **_tombstone_kwargs(state, replaced_by, tombstone_reason),
     }
     data = _authed("put", "update", payload)
     console.print(_metadata_table(data, title=f"[bold]Updated: {ark}[/bold]"))
+
+
+@cli.command()
+@click.option("--ark", required=True, help="ARK identifier to tombstone")
+@click.option("--replaced-by", default=None, help="Replacement ARK")
+@click.option(
+    "--reason",
+    default=None,
+    help="Human-readable reason for tombstoning",
+)
+def tombstone(ark, replaced_by, reason):
+    """Mark an ARK as tombstoned."""
+    payload = {
+        "ark": ark,
+        **_tombstone_kwargs("tombstoned", replaced_by, reason),
+    }
+    data = _authed("put", "update", payload)
+    console.print(_metadata_table(data, title=f"[bold]Tombstoned: {ark}[/bold]"))
+
+
+@cli.command()
+@click.option("--ark", required=True, help="ARK identifier to inspect")
+@click.option("--limit", default=20, show_default=True, type=int, help="Max events")
+def history(ark, limit):
+    """Show recent change history for one ARK."""
+    data = _request("get", "history", params={"ark": ark, "limit": limit})
+    events = data.get("events", [])
+    table = Table(
+        box=box.SIMPLE_HEAD,
+        show_header=True,
+        header_style="bold cyan",
+        title=f"History: {data.get('ark', ark)}",
+    )
+    table.add_column("When")
+    table.add_column("Type")
+    table.add_column("IP")
+    table.add_column("Changes")
+    for event in events:
+        diff = event.get("diff", {})
+        changed = ", ".join(diff.keys()) if diff else "-"
+        table.add_row(
+            str(event.get("created_at", "")),
+            str(event.get("event_type", "")),
+            str(event.get("ip") or ""),
+            changed,
+        )
+    console.print(table)
+    console.print(f"[dim]{data.get('count', 0)} event(s)[/dim]")
 
 
 @cli.group()
