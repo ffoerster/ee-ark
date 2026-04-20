@@ -751,7 +751,9 @@ def history_ark(request):
         }
         for event in events
     ]
-    return JsonResponse({"ark": f"ark:/{ark_lookup}", "count": len(payload), "events": payload})
+    return JsonResponse(
+        {"ark": f"ark:/{ark_lookup}", "count": len(payload), "events": payload}
+    )
 
 
 def status(request):

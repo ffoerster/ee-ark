@@ -55,6 +55,8 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="arkevent",
-            index=models.Index(fields=["ark", "-created_at"], name="ark_ark_crea_047fb2_idx"),
+            index=models.Index(
+                fields=["ark", "-created_at"], name="ark_ark_crea_047fb2_idx"
+            ),
         ),
     ]

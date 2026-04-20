@@ -31,6 +31,35 @@ class ShoulderAdmin(admin.ModelAdmin):
     list_display = ["shoulder", "name", "naan"]
 
 
+@admin.register(Ark)
+class ArkAdmin(admin.ModelAdmin):
+    list_display = ["ark", "naan", "shoulder", "state", "url", "title"]
+    list_filter = ["naan", "shoulder", "state"]
+    search_fields = ["ark", "url", "title", "identifier", "metadata"]
+    ordering = ["ark"]
+    readonly_fields = [
+        "ark",
+        "naan",
+        "shoulder",
+        "assigned_name",
+        "url",
+        "metadata",
+        "commitment",
+        "title",
+        "type",
+        "identifier",
+        "format",
+        "relation",
+        "source",
+    ]
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Key)
 class KeyAdmin(admin.ModelAdmin):
     """Django Admin model for managing Arklet access keys.
