@@ -41,6 +41,12 @@ class UpdateArkForm(forms.Form):
     format = forms.CharField(required=False)
     relation = forms.CharField(required=False)
     source = forms.URLField(required=False)
+    state = forms.ChoiceField(
+        required=False,
+        choices=[("active", "active"), ("tombstoned", "tombstoned")],
+    )
+    replaced_by = forms.CharField(required=False, validators=[validate_ark])
+    tombstone_reason = forms.CharField(required=False)
 
     def clean(self):
         cleaned_data = super().clean()

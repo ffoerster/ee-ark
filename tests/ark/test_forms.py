@@ -87,3 +87,14 @@ class TestUpdateArkForm:
         form = UpdateArkForm({"ark": "ark:/12345/abc123", "title": "New Title"})
         assert form.is_valid()
         assert form.cleaned_data["title"] == "New Title"
+
+    def test_tombstone_fields_are_valid(self):
+        form = UpdateArkForm(
+            {
+                "ark": "ark:/12345/abc123",
+                "state": "tombstoned",
+                "replaced_by": "ark:/12345/new123",
+                "tombstone_reason": "Withdrawn",
+            }
+        )
+        assert form.is_valid(), form.errors

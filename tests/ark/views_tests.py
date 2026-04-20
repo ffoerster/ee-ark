@@ -321,6 +321,38 @@ class TestResolveArk:
         assert res.status_code == 302
         assert "/page/2" in res["Location"]
 
+    @pytest.mark.django_db
+    def test_tombstoned_ark_returns_info_page(self, client, naan, shoulder) -> None:
+        ark_obj = Ark.objects.create(
+            ark=f"{naan.naan}{shoulder.shoulder}goneitem1",
+            naan=naan,
+            shoulder=shoulder,
+            assigned_name="goneitem1",
+            state="tombstoned",
+            tombstone_reason="Object has been withdrawn",
+        )
+        res = client.get(f"/ark:/{ark_obj.ark}")
+        assert res.status_code == 410
+        assert b"Tombstoned" in res.content
+
+    @pytest.mark.django_db
+    def test_tombstoned_ark_json_has_status_fields(
+        self, client, naan, shoulder
+    ) -> None:
+        ark_obj = Ark.objects.create(
+            ark=f"{naan.naan}{shoulder.shoulder}goneitem2",
+            naan=naan,
+            shoulder=shoulder,
+            assigned_name="goneitem2",
+            state="tombstoned",
+            replaced_by="ark:/1/t2replacement",
+        )
+        res = client.get(f"/ark:/{ark_obj.ark}?json")
+        assert res.status_code == 410
+        data = res.json()
+        assert data["state"]["value"] == "tombstoned"
+        assert data["replaced_by"]["value"] == "ark:/1/t2replacement"
+
 
 class TestBatchMintArks:
     @pytest.mark.django_db
@@ -402,6 +434,42 @@ class TestBatchUpdateArks:
         )
         assert res.status_code == 400
 
+    @pytest.mark.django_db
+    def test_updates_follow_ark_mapping_not_queryset_order(
+        self, client, naan, shoulder, auth
+    ) -> None:
+        ark_one = Ark.objects.create(
+            ark=f"{naan.naan}{shoulder.shoulder}mapping01",
+            naan=naan,
+            shoulder=shoulder,
+            assigned_name="mapping01",
+            title="Original 1",
+        )
+        ark_two = Ark.objects.create(
+            ark=f"{naan.naan}{shoulder.shoulder}mapping02",
+            naan=naan,
+            shoulder=shoulder,
+            assigned_name="mapping02",
+            title="Original 2",
+        )
+        payload = {
+            "data": [
+                {"ark": f"ark:/{ark_two.ark}", "title": "Updated 2"},
+                {"ark": f"ark:/{ark_one.ark}", "title": "Updated 1"},
+            ]
+        }
+        res = client.post(
+            "/bulk_update",
+            data=payload,
+            content_type="application/json",
+            HTTP_AUTHORIZATION=auth,
+        )
+        assert res.status_code == 200
+        ark_one.refresh_from_db()
+        ark_two.refresh_from_db()
+        assert ark_one.title == "Updated 1"
+        assert ark_two.title == "Updated 2"
+
 
 class TestBatchQueryArks:
     @pytest.mark.django_db
@@ -425,3 +493,14 @@ class TestBatchQueryArks:
             content_type="application/json",
         )
         assert res.status_code == 400
+
+    @pytest.mark.django_db
+    def test_accepts_object_with_data_key(self, client, ark) -> None:
+        res = client.post(
+            "/bulk_query",
+            data={"data": [{"ark": f"ark:/{ark.ark}"}]},
+            content_type="application/json",
+        )
+        assert res.status_code == 200
+        results = res.json()
+        assert any(r["ark"] == ark.ark for r in results)

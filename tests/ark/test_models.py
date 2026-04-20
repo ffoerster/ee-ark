@@ -92,3 +92,17 @@ class TestArk:
         original_ark = ark.ark
         ark.set_fields({"ark": "tampered", "naan": 0})
         assert ark.ark == original_ark
+
+    @pytest.mark.django_db
+    def test_set_fields_allows_tombstone_fields(self, naan, shoulder):
+        ark = Ark.create(naan, shoulder)
+        ark.set_fields(
+            {
+                "state": "tombstoned",
+                "replaced_by": "ark:/12345/replacement",
+                "tombstone_reason": "Removed",
+            }
+        )
+        assert ark.state == "tombstoned"
+        assert ark.replaced_by == "ark:/12345/replacement"
+        assert ark.tombstone_reason == "Removed"

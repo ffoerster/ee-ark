@@ -79,6 +79,13 @@ class Shoulder(models.Model):
 
 
 class Ark(models.Model):
+    STATE_ACTIVE = "active"
+    STATE_TOMBSTONED = "tombstoned"
+    STATE_CHOICES = [
+        (STATE_ACTIVE, "active"),
+        (STATE_TOMBSTONED, "tombstoned"),
+    ]
+
     ark = models.CharField(primary_key=True, max_length=200, editable=False)
     naan = models.ForeignKey(Naan, on_delete=models.DO_NOTHING, editable=False)
     shoulder = models.ForeignKey(Shoulder, on_delete=models.DO_NOTHING, editable=False)
@@ -94,6 +101,13 @@ class Ark(models.Model):
     format = models.TextField(default="", blank=True)
     relation = models.TextField(default="", blank=True)
     source = models.TextField(default="", blank=True)
+    state = models.CharField(
+        max_length=32,
+        choices=STATE_CHOICES,
+        default=STATE_ACTIVE,
+    )
+    replaced_by = models.CharField(max_length=200, default="", blank=True)
+    tombstone_reason = models.TextField(default="", blank=True)
 
     COLUMN_METADATA = {
         "title": {

@@ -7,6 +7,15 @@
 
 <body>
     <h1>Ark {{ ark }}</h1>
+    {% if state == "tombstoned" %}
+        <p><strong>Status:</strong> Tombstoned</p>
+        {% if tombstone_reason %}
+            <p><strong>Reason:</strong> {{ tombstone_reason }}</p>
+        {% endif %}
+        {% if replaced_by %}
+            <p><strong>Replaced by:</strong> {{ replaced_by }}</p>
+        {% endif %}
+    {% endif %}
     <p>
         <a href="{{ url }}">{{ url }}</a>, {{ label }}
     </p>

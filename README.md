@@ -10,7 +10,7 @@ Licensed under the [MIT License](LICENSE).
 
 ## Features
 
-| Feature | ee-ark / squidgetx | internetarchive |
+| Feature | ee-ark | internetarchive |
 | --- | :---: | :---: |
 | ARK resolution | ✓ | ✓ |
 | ARK minting and editing | ✓ | ✓ |
@@ -20,6 +20,7 @@ Licensed under the [MIT License](LICENSE).
 | API access key hashing | ✓ | |
 | Shoulder rules | ✓ | |
 | Extensive metadata | ✓ | |
+| Tombstone support | ✓ | |
 | `?info` and `?json` endpoints | ✓ | |
 
 ---
@@ -109,7 +110,17 @@ Returns the minted ARK identifier as a JSON string. The shoulder must already ex
 
 #### `PUT /update`
 
-Updates an existing ARK. Requires `ark`; all other fields from `/mint` are optional. Returns `200` on success.
+Updates an existing ARK. Requires `ark`; all other fields from `/mint` are optional.
+
+Additional optional tombstone fields:
+
+| Field | Description |
+| --- | --- |
+| `state` | `active` or `tombstoned` |
+| `replaced_by` | ARK that supersedes this record |
+| `tombstone_reason` | Human-readable reason for tombstoning |
+
+Returns `200` on success.
 
 #### `POST /bulk_mint`
 

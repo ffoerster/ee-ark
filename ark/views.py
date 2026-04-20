@@ -157,13 +157,34 @@ def resolve_ark(request, ark: str):
     ark_str = f"{naan}/{identifier}"
     ark_obj = Ark.objects.filter(ark=ark_str).first()
     if ark_obj:
+        is_tombstoned = ark_obj.state == Ark.STATE_TOMBSTONED
+
         if info_inflection:
-            return view_ark(request, ark_obj)
+            return view_ark(
+                request,
+                ark_obj,
+                status_code=410 if is_tombstoned else 200,
+            )
         if json_inflection:
-            return json_ark(request, ark_obj)
+            return json_ark(
+                request,
+                ark_obj,
+                status_code=410 if is_tombstoned else 200,
+            )
+        if is_tombstoned:
+            return view_ark(request, ark_obj, status_code=410)
         if not ark_obj.url:
             return view_ark(request, ark_obj)
-        return HttpResponseRedirect(ark_obj.url + "?" + request.META["QUERY_STRING"])
+
+        query_params = request.GET.copy()
+        query_params.pop("info", None)
+        query_params.pop("json", None)
+        querystring = query_params.urlencode()
+        redirect_url = ark_obj.url
+        if querystring:
+            separator = "&" if "?" in redirect_url else "?"
+            redirect_url = f"{redirect_url}{separator}{querystring}"
+        return HttpResponseRedirect(redirect_url)
     else:
         # Ark not found. Try to find an ark that is a prefix.
         prefixes = [f"{naan}/{a}" for a in gen_prefixes(identifier)]
@@ -190,7 +211,7 @@ Return HTML human readable webpage information about the Ark object
 """
 
 
-def view_ark(request: HttpRequest, ark: Ark):
+def view_ark(request: HttpRequest, ark: Ark, status_code=200):
 
     context = {
         "ark": ark.ark,
@@ -203,9 +224,12 @@ def view_ark(request: HttpRequest, ark: Ark):
         "relation": ark.relation,
         "source": ark.source,
         "metadata": ark.metadata,
+        "state": ark.state,
+        "replaced_by": ark.replaced_by,
+        "tombstone_reason": ark.tombstone_reason,
     }
 
-    return render(request, "info.html", context)
+    return render(request, "info.html", context, status=status_code)
 
 
 """
@@ -225,6 +249,9 @@ def ark_to_json(ark: Ark, metadata=True):
         "relation": ark.relation,
         "source": ark.source,
         "metadata": ark.metadata,
+        "state": ark.state,
+        "replaced_by": ark.replaced_by,
+        "tombstone_reason": ark.tombstone_reason,
     }
     if not metadata:
         return data
@@ -235,22 +262,31 @@ def ark_to_json(ark: Ark, metadata=True):
     return obj
 
 
-def json_ark(request: HttpRequest, ark: Ark):
+def json_ark(request: HttpRequest, ark: Ark, status_code=200):
     obj = ark_to_json(ark)
     # Return the JSON response
-    return JsonResponse(obj)
+    return JsonResponse(obj, status=status_code)
 
 
 @ratelimit(key="ip", rate="60/m", block=True)
 @csrf_exempt
 def batch_query_arks(request):
     try:
-        data = json.loads(request.body.decode("utf-8"))
+        payload = json.loads(request.body.decode("utf-8"))
     except (json.JSONDecodeError, TypeError) as e:
         return HttpResponseBadRequest(e)
+
+    data = payload.get("data") if isinstance(payload, dict) else payload
+    if not isinstance(data, list):
+        return HttpResponseBadRequest(
+            "Expected a JSON list or an object with a 'data' list"
+        )
     if len(data) > 100:
         return HttpResponseBadRequest("Exceeded max rows (100)")
-    arks = [parse_ark_lookup(d.get("ark")) for d in data]
+    try:
+        arks = [parse_ark_lookup(d.get("ark")) for d in data]
+    except (AttributeError, TypeError, ValueError):
+        return HttpResponseBadRequest("Each record must contain a valid 'ark' value")
     ark_objs = Ark.objects.filter(ark__in=arks)
     resp = [ark_to_json(ark, metadata=False) for ark in ark_objs]
     return JsonResponse(resp, safe=False)
@@ -270,7 +306,12 @@ def batch_update_arks(request):
     for d in data:
         if "ark" not in d:
             return HttpResponseBadRequest("Each record must have an 'ark' field.")
-        _, naan, _ = parse_ark(d["ark"])
+        try:
+            _, naan, _ = parse_ark(d["ark"])
+        except (AttributeError, TypeError, ValueError):
+            return HttpResponseBadRequest(
+                "Each record must contain a valid 'ark' value"
+            )
         naans.add(naan)
 
     if len(naans) != 1:
@@ -281,24 +322,45 @@ def batch_update_arks(request):
     if authorized_naan is None:
         return HttpResponseForbidden()
 
-    arks = [parse_ark_lookup(d.get("ark")) for d in data]
+    try:
+        arks = [parse_ark_lookup(d.get("ark")) for d in data]
+    except (AttributeError, TypeError, ValueError):
+        return HttpResponseBadRequest("Each record must contain a valid 'ark' value")
     ark_objs = Ark.objects.filter(ark__in=arks)
+    ark_lookup = {ark_obj.ark: ark_obj for ark_obj in ark_objs}
 
     # track the fields we have seen so far for efficient updating
     seen_fields = set()
-    for ark_obj, new_record in zip(ark_objs, data):
+    to_update = []
+    missing = []
+    for new_record in data:
+        ark = parse_ark_lookup(new_record["ark"])
+        ark_obj = ark_lookup.get(ark)
+        if ark_obj is None:
+            missing.append(new_record["ark"])
+            continue
         ark_obj.set_fields(new_record)
         seen_fields.update(new_record.keys())
+        to_update.append(ark_obj)
     # don't update primary key
-    seen_fields.remove("ark")
-    n_updated = Ark.objects.bulk_update(ark_objs, fields=seen_fields)
+    seen_fields.discard("ark")
+    n_updated = 0
+    if to_update and seen_fields:
+        n_updated = Ark.objects.bulk_update(to_update, fields=seen_fields)
     logger.info(
         "batch_update naan=%s count=%d ip=%s",
         naan,
         n_updated,
         request.META.get("REMOTE_ADDR"),
     )
-    return JsonResponse({"num_received": len(data), "num_updated": n_updated})
+    return JsonResponse(
+        {
+            "num_received": len(data),
+            "num_updated": n_updated,
+            "num_missing": len(missing),
+            "missing_arks": missing,
+        }
+    )
 
 
 @ratelimit(key="ip", rate="60/m", block=True)
