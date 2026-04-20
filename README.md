@@ -88,6 +88,34 @@ By default the resolver runs on port 80 and the minter on port 8080. To change t
 
 All management endpoints require an `Authorization` header with a valid API key. Keys are provisioned in the admin UI and are scoped to NAANs.
 
+Error responses use a consistent JSON shape:
+
+```json
+{
+  "code": "validation_error",
+  "message": "Mint payload validation failed",
+  "details": {
+    "shoulder": ["This field is required."]
+  },
+  "request_id": "8c47627b-355b-4b07-8b2e-5da23afec6ae"
+}
+```
+
+Common error codes:
+
+| Code | Typical status | Meaning |
+| --- | --- | --- |
+| `method_not_allowed` | `405` | HTTP method is not supported for this endpoint |
+| `invalid_json` | `400` | Request body is not valid JSON |
+| `validation_error` | `400` | Form-level validation failed |
+| `forbidden` | `403` | Missing or invalid API key |
+| `invalid_payload` | `400` | JSON shape is wrong (e.g. missing `data` or required fields) |
+| `invalid_ark` | `400` | ARK value is malformed |
+| `ark_not_found` | `404` | Requested ARK does not exist |
+| `invalid_shoulder` | `400` | Shoulder does not exist |
+| `batch_limit_exceeded` | `400` | More than 100 records in one batch request |
+| `mint_collision_limit` | `500` | Minting failed repeatedly due to identifier collisions |
+
 #### `POST /mint`
 
 Mints a new ARK.

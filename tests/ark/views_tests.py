@@ -117,6 +117,9 @@ class TestMintArk:
         mint_ark_args.data = {"a": "b"}
         res = client.post(**asdict(mint_ark_args))
         assert res.status_code == 400
+        body = res.json()
+        assert body["code"] == "validation_error"
+        assert "request_id" in body
 
     def test_http_authorization_header_required(self, client, mint_ark_args) -> None:
         """mint_ark requires an HTTP_AUTHORIZATION header."""
@@ -126,6 +129,10 @@ class TestMintArk:
         res = client.post(**args)
         # Then we get a 403 Forbidden
         assert res.status_code == 403
+        body = res.json()
+        assert body["code"] == "forbidden"
+        assert body["request_id"]
+        assert res["X-Request-ID"] == body["request_id"]
 
     def test_verify_key_has_naan(self, client, mint_ark_args) -> None:
         """mint_ark requires present auth header to link to a NAAN."""
