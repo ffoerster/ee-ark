@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0](https://github.com/ffoerster/ee-ark/compare/v0.3.0...v0.4.0) (2026-04-22)
+
+
+### Features
+
+* add 'cite_as' field to ARK components for citation information ([479efe1](https://github.com/ffoerster/ee-ark/commit/479efe17aa48248f872af7b77f6cd969b5879735))
+* add 'cite_as' field to Ark model and forms; update info template and views ([6f329a5](https://github.com/ffoerster/ee-ark/commit/6f329a5c67a82d00e26aaf91f39430949362562f))
+* Enhance ARK model with CDN URL, event name, and related ARKs ([7be1da8](https://github.com/ffoerster/ee-ark/commit/7be1da866f784ff12534f9aa17010965da99daf9))
+
+
+### Bug Fixes
+
+* comment out healthcheck command in production Dockerfile ([c2d4de8](https://github.com/ffoerster/ee-ark/commit/c2d4de859e6b381c23e9785a975acd0705f0abe9))
+
 ## [0.3.0](https://github.com/ffoerster/ee-ark/compare/v0.2.0...v0.3.0) (2026-04-20)
 
 
