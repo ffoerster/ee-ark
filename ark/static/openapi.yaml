@@ -294,6 +294,9 @@ components:
         event_name:
           type: string
           description: Event or venue name
+        cite_as:
+          type: string
+          description: Full citation string shown on the info page (e.g. "Electric Echoes Flyer Archive. 2004. ARK: ark:/12345/... https://cdn...")
         related_arks:
           type: array
           description: Related ARK objects
@@ -341,6 +344,9 @@ components:
           format: uri
         event_name:
           type: string
+        cite_as:
+          type: string
+          description: Full citation string shown on the info page
         related_arks:
           type: array
           items:
@@ -429,6 +435,8 @@ components:
         cdn_url:
           type: string
         event_name:
+          type: string
+        cite_as:
           type: string
         related_arks:
           type: array
