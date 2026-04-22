@@ -34,6 +34,9 @@ EVENT_FIELDS = [
     "relation",
     "source",
     "metadata",
+    "cdn_url",
+    "event_name",
+    "related_arks",
     "state",
     "replaced_by",
     "tombstone_reason",
@@ -84,6 +87,61 @@ def create_ark_event(request: HttpRequest, ark_obj: Ark, event_type: str, diff: 
         ip=request.META.get("REMOTE_ADDR", ""),
         diff_json=diff,
     )
+
+
+def resolve_related_arks(ark_obj: Ark):
+    """Return related ARKs with bidirectional inverse relations resolved."""
+    seen = set()
+    results = []
+
+    # Forward relations stored on this ark
+    for item in ark_obj.related_arks or []:
+        target_ark = item.get("ark", "")
+        if target_ark in seen:
+            continue
+        seen.add(target_ark)
+        results.append(
+            {
+                "ark": target_ark,
+                "relation": item.get("relation", ""),
+                "label": item.get("label", ""),
+                "direction": "forward",
+            }
+        )
+
+    # Inverse relations: find arks that point to this one
+    try:
+        inverse_qs = Ark.objects.filter(
+            related_arks__contains=[{"ark": f"ark:/{ark_obj.ark}"}]
+        )
+    except Exception:
+        inverse_qs = []
+
+    for other in inverse_qs:
+        if other.ark == ark_obj.ark:
+            continue
+        other_ark_str = f"ark:/{other.ark}"
+        if other_ark_str in seen:
+            continue
+        seen.add(other_ark_str)
+        # Determine inverse relation label
+        for item in other.related_arks or []:
+            if item.get("ark") == f"ark:/{ark_obj.ark}":
+                rel = item.get("relation", "")
+                inv_rel = Ark.INVERSE_RELATIONS.get(rel, "related")
+                label = item.get("label", "")
+                inv_label = Ark.INVERSE_RELATIONS.get(label, label) if label else ""
+                results.append(
+                    {
+                        "ark": other_ark_str,
+                        "relation": inv_rel,
+                        "label": inv_label or inv_rel,
+                        "direction": "inverse",
+                    }
+                )
+                break
+
+    return results
 
 
 def authorize(request, naan):
@@ -347,6 +405,7 @@ Return HTML human readable webpage information about the Ark object
 
 
 def view_ark(request: HttpRequest, ark: Ark, status_code=200):
+    related = resolve_related_arks(ark)
 
     context = {
         "ark": ark.ark,
@@ -359,6 +418,9 @@ def view_ark(request: HttpRequest, ark: Ark, status_code=200):
         "relation": ark.relation,
         "source": ark.source,
         "metadata": ark.metadata,
+        "cdn_url": ark.cdn_url,
+        "event_name": ark.event_name,
+        "related_arks": related,
         "state": ark.state,
         "replaced_by": ark.replaced_by,
         "tombstone_reason": ark.tombstone_reason,
@@ -384,6 +446,9 @@ def ark_to_json(ark: Ark, metadata=True):
         "relation": ark.relation,
         "source": ark.source,
         "metadata": ark.metadata,
+        "cdn_url": ark.cdn_url,
+        "event_name": ark.event_name,
+        "related_arks": resolve_related_arks(ark),
         "state": ark.state,
         "replaced_by": ark.replaced_by,
         "tombstone_reason": ark.tombstone_reason,
@@ -765,6 +830,10 @@ def status(request):
             "status": "ok!",
         }
     )
+
+
+def api_docs(request):
+    return render(request, "swagger_ui.html")
 
 
 def health_check(request):

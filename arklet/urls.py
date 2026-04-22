@@ -28,12 +28,14 @@ minterpatterns = [
     path("bulk_mint", views.batch_mint_arks, name="bulk_mint"),
     path("history", views.history_ark, name="history_ark"),
     path("admin/", admin.site.urls),
+    path("docs/", views.api_docs, name="api_docs"),
     path("healthcheck", views.health_check, name="healthcheck"),
 ]
 
 resolverpatterns = [
     re_path(r"^(resolve/)?(?P<ark>ark:/?.*$)", views.resolve_ark, name="resolve_ark"),
     path("", views.status, name="status"),
+    path("docs/", views.api_docs, name="api_docs"),
     path("healthcheck", views.health_check, name="healthcheck"),
 ]
 

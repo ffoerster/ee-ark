@@ -1,40 +1,255 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-    <title>Ark Detail</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if event_name %}{{ event_name }}{% else %}{{ label|default:ark }}{% endif %} — ARK Info</title>
+    <style>
+        :root {
+            --bg: #f7f7f7;
+            --card: #ffffff;
+            --text: #222222;
+            --muted: #666666;
+            --border: #e0e0e0;
+            --accent: #0066cc;
+            --danger: #c0392b;
+            --warning-bg: #fff3cd;
+            --warning-text: #856404;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 1rem;
+            line-height: 1.5;
+        }
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+        }
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            margin: 0 0 0.5rem;
+            font-size: 1.5rem;
+        }
+        .subtitle {
+            color: var(--muted);
+            font-size: 0.95rem;
+            margin-bottom: 1rem;
+        }
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+        }
+        .badge-active { background: #d4edda; color: #155724; }
+        .badge-tombstoned { background: #f8d7da; color: #721c24; }
+        .banner {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+        .banner-tombstone {
+            background: var(--warning-bg);
+            color: var(--warning-text);
+            border: 1px solid #ffeaa7;
+        }
+        .preview {
+            text-align: center;
+            margin: 1rem 0;
+        }
+        .preview img {
+            max-width: 100%;
+            max-height: 600px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+        }
+        .preview .download {
+            display: inline-block;
+            margin-top: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--accent);
+            text-decoration: none;
+        }
+        .preview .download:hover { text-decoration: underline; }
+        table.meta {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+        table.meta th,
+        table.meta td {
+            text-align: left;
+            padding: 0.5rem 0.25rem;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+        table.meta th {
+            width: 35%;
+            color: var(--muted);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        table.meta td { word-break: break-word; }
+        table.meta a { color: var(--accent); text-decoration: none; }
+        table.meta a:hover { text-decoration: underline; }
+        .related-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .related-list li {
+            padding: 0.35rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .related-list li:last-child { border-bottom: none; }
+        .related-list a { color: var(--accent); text-decoration: none; }
+        .related-list a:hover { text-decoration: underline; }
+        .related-list .rel-type {
+            display: inline-block;
+            background: #eef6fc;
+            color: var(--accent);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-right: 0.5rem;
+            font-weight: 600;
+        }
+        .cite-box {
+            background: #f1f1f1;
+            border-left: 4px solid var(--accent);
+            padding: 0.75rem 1rem;
+            border-radius: 0 6px 6px 0;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.9rem;
+            word-break: break-all;
+            margin-top: 1rem;
+        }
+        .cite-label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.25rem;
+        }
+        footer {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.8rem;
+            margin-top: 2rem;
+        }
+    </style>
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "{% if cdn_url %}ImageObject{% else %}CreativeWork{% endif %}",
+        "name": "{{ label|default:event_name|default:ark|escapejs }}",
+        "identifier": "ark:/{{ ark }}",
+        "url": "{{ url|default:'' }}"{% if cdn_url %},
+        "contentUrl": "{{ cdn_url }}"{% endif %}{% if event_name %},
+        "about": {
+            "@type": "Event",
+            "name": "{{ event_name|escapejs }}"
+        }{% endif %}
+    }
+    </script>
 </head>
-
 <body>
-    <h1>Ark {{ ark }}</h1>
-    {% if state == "tombstoned" %}
-        <p><strong>Status:</strong> Tombstoned</p>
-        {% if tombstone_reason %}
-            <p><strong>Reason:</strong> {{ tombstone_reason }}</p>
-        {% endif %}
-        {% if replaced_by %}
-            <p><strong>Replaced by:</strong> {{ replaced_by }}</p>
-        {% endif %}
-    {% endif %}
-    <p>
-        <a href="{{ url }}">{{ url }}</a>, {{ label }}
-    </p>
-    <p>Type: {{ type }}</p>
-    <p>Commitment Statement: {{ commitment }}</p>
-    <p>Format: {{ format }}</p>
-    {% if identifier %}
-        <p>Identifier: {{ identifier }}</p>
-    {% endif %}
-    {% if relation %}
-        <p>Relation: <a href="{{ relation }}">{{ relation }}</a></p>
-    {% endif %}
-    {% if source %}
-        <p>Source: <a href="{{ source }}">{{ source }}</a></p>
-    {% endif %}
-    {% if metadata %}
-        <p>Other Information: {{ metadata }}</p>
-    {% endif %}
+    <div class="container">
+        <div class="card">
+            <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+                <span class="badge badge-{% if state == 'tombstoned' %}tombstoned{% else %}active{% endif %}">
+                    {{ state|default:"active" }}
+                </span>
+                <span style="color:var(--muted);font-size:0.85rem;">ark:/{{ ark }}</span>
+            </div>
 
+            {% if state == "tombstoned" %}
+            <div class="banner banner-tombstone">
+                <strong>Tombstoned</strong>
+                {% if tombstone_reason %}<br>{{ tombstone_reason }}{% endif %}
+                {% if replaced_by %}<br>Replaced by: <a href="{{ replaced_by }}?info">{{ replaced_by }}</a>{% endif %}
+            </div>
+            {% endif %}
+
+            <h1>{% if event_name %}{{ event_name }}{% else %}{{ label|default:ark }}{% endif %}</h1>
+            {% if event_name and label %}
+                <div class="subtitle">{{ label }}</div>
+            {% endif %}
+
+            {% if cdn_url %}
+            <div class="preview">
+                {% with lower_cdn=cdn_url|lower %}
+                    {% if lower_cdn|slice:"-4:" == ".jpg" or lower_cdn|slice:"-5:" == ".jpeg" or lower_cdn|slice:"-4:" == ".png" or lower_cdn|slice:"-5:" == ".webp" or lower_cdn|slice:"-4:" == ".gif" %}
+                        <img src="{{ cdn_url }}" alt="{% if label %}{{ label }}{% else %}Preview for {{ ark }}{% endif %}">
+                    {% endif %}
+                {% endwith %}
+                <br>
+                <a class="download" href="{{ cdn_url }}" target="_blank" rel="noopener">Download / View original file ↗</a>
+            </div>
+            {% endif %}
+
+            <table class="meta">
+                {% if url %}
+                <tr><th>Target URL</th><td><a href="{{ url }}">{{ url }}</a></td></tr>
+                {% endif %}
+                {% if type %}
+                <tr><th>Type</th><td>{{ type }}</td></tr>
+                {% endif %}
+                {% if format %}
+                <tr><th>Format</th><td>{{ format }}</td></tr>
+                {% endif %}
+                {% if commitment %}
+                <tr><th>Commitment</th><td>{{ commitment }}</td></tr>
+                {% endif %}
+                {% if identifier %}
+                <tr><th>Identifier</th><td>{{ identifier }}</td></tr>
+                {% endif %}
+                {% if relation %}
+                <tr><th>Relation</th><td><a href="{{ relation }}">{{ relation }}</a></td></tr>
+                {% endif %}
+                {% if source %}
+                <tr><th>Source</th><td><a href="{{ source }}">{{ source }}</a></td></tr>
+                {% endif %}
+                {% if metadata %}
+                <tr><th>Metadata</th><td><pre style="margin:0;white-space:pre-wrap;font-size:0.85rem;">{{ metadata }}</pre></td></tr>
+                {% endif %}
+            </table>
+
+            {% if related_arks %}
+            <h2 style="font-size:1.1rem;margin-top:1.5rem;margin-bottom:0.5rem;">Related Objects</h2>
+            <ul class="related-list">
+                {% for rel in related_arks %}
+                <li>
+                    <span class="rel-type">{{ rel.relation }}</span>
+                    <a href="/{{ rel.ark }}?info">{{ rel.label|default:rel.ark }}</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+
+            <div class="cite-box">
+                <div class="cite-label">Cite as</div>
+                {% if label %}{{ label }}. {% endif %}ark:/{{ ark }}{% if url %} — {{ url }}{% endif %}
+            </div>
+        </div>
+
+        <footer>
+            Persistent identifier provided by <a href="/" style="color:var(--muted);">ARK Resolver</a>
+        </footer>
+    </div>
 </body>
-
 </html>

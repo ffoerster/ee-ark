@@ -22,6 +22,9 @@ METADATA_FIELDS = [
     "relation",
     "source",
     "metadata",
+    "cdn_url",
+    "event_name",
+    "related_arks",
 ]
 
 
@@ -99,7 +102,18 @@ def _metadata_table(data: dict, title: str = "") -> Table:
 
 
 def _metadata_kwargs(
-    url, title, type_, commitment, identifier, format_, relation, source, metadata
+    url,
+    title,
+    type_,
+    commitment,
+    identifier,
+    format_,
+    relation,
+    source,
+    metadata,
+    cdn_url,
+    event_name,
+    related_arks,
 ):
     return {
         k: v
@@ -113,6 +127,9 @@ def _metadata_kwargs(
             "relation": relation,
             "source": source,
             "metadata": metadata,
+            "cdn_url": cdn_url,
+            "event_name": event_name,
+            "related_arks": related_arks,
         }.items()
         if v is not None
     }
@@ -141,6 +158,13 @@ def _metadata_options(f):
         ("--relation", "dc:relation (URL)"),
         ("--source", "dc:source (URL)"),
         ("--metadata", "Free-form metadata"),
+        ("--cdn-url", "CDN URL (image/PDF)"),
+        ("--event-name", "Event or venue name"),
+        (
+            "--related-arks",
+            "JSON list of related ARKs, e.g. "
+            '[{"ark":"ark:/...","relation":"hasBack","label":"Rückseite"}]\'',
+        ),
     ]:
         f = click.option(opt, default=None, help=help_)(f)
     return f
@@ -192,13 +216,27 @@ def mint(
     relation,
     source,
     metadata,
+    cdn_url,
+    event_name,
+    related_arks,
 ):
     """Mint a new ARK identifier."""
     payload = {
         "naan": naan,
         "shoulder": shoulder,
         **_metadata_kwargs(
-            url, title, type, commitment, identifier, format, relation, source, metadata
+            url,
+            title,
+            type,
+            commitment,
+            identifier,
+            format,
+            relation,
+            source,
+            metadata,
+            cdn_url,
+            event_name,
+            related_arks,
         ),
     }
     data = _authed("post", "mint", payload)
@@ -232,6 +270,9 @@ def update(
     relation,
     source,
     metadata,
+    cdn_url,
+    event_name,
+    related_arks,
     state,
     replaced_by,
     tombstone_reason,
@@ -240,7 +281,18 @@ def update(
     payload = {
         "ark": ark,
         **_metadata_kwargs(
-            url, title, type, commitment, identifier, format, relation, source, metadata
+            url,
+            title,
+            type,
+            commitment,
+            identifier,
+            format,
+            relation,
+            source,
+            metadata,
+            cdn_url,
+            event_name,
+            related_arks,
         ),
         **_tombstone_kwargs(state, replaced_by, tombstone_reason),
     }

@@ -20,7 +20,7 @@ def noid_check_digit(noid: str) -> str:
 
 
 def generate_noid(length: int) -> str:
-    return "".join(secrets.choice(BETANUMERIC) for _ in range(length))
+    return "".join(secrets.choice(BETANUMERIC) for _ in range(int(length)))
 
 
 def parse_ark(ark: str) -> Tuple[str, int, str]:

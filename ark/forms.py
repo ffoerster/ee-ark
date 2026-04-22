@@ -1,3 +1,5 @@
+import json
+
 from django import forms
 from django.core.exceptions import ValidationError
 
@@ -16,6 +18,44 @@ def validate_ark(ark: str):
         raise ValidationError(f"Invalid ARK: {e}")
 
 
+RELATION_CHOICES = {
+    "hasFront",
+    "hasBack",
+    "hasVariant",
+    "isPartOf",
+}
+
+
+def validate_related_arks(value):
+    if value in (None, "", []):
+        return value
+    if isinstance(value, list):
+        data = value
+    else:
+        try:
+            data = json.loads(value)
+        except (json.JSONDecodeError, TypeError) as exc:
+            raise ValidationError("Must be a valid JSON list.") from exc
+    if not isinstance(data, list):
+        raise ValidationError("Must be a list of objects.")
+    for i, item in enumerate(data):
+        if not isinstance(item, dict):
+            raise ValidationError(f"Item {i} must be an object.")
+        if "ark" not in item:
+            raise ValidationError(f"Item {i} is missing 'ark'.")
+        relation = item.get("relation", "")
+        if relation not in RELATION_CHOICES:
+            raise ValidationError(
+                f"Item {i} has invalid relation '{relation}'. "
+                f"Allowed: {', '.join(sorted(RELATION_CHOICES))}"
+            )
+        try:
+            parse_ark(item["ark"])
+        except ValueError as exc:
+            raise ValidationError(f"Item {i} has invalid ARK: {exc}") from exc
+    return data
+
+
 class MintArkForm(forms.Form):
     naan = forms.IntegerField()
     shoulder = forms.CharField(validators=[validate_shoulder])
@@ -28,6 +68,9 @@ class MintArkForm(forms.Form):
     format = forms.CharField(required=False)
     relation = forms.CharField(required=False)
     source = forms.URLField(required=False)
+    cdn_url = forms.URLField(required=False)
+    event_name = forms.CharField(required=False)
+    related_arks = forms.JSONField(required=False, validators=[validate_related_arks])
 
 
 class UpdateArkForm(forms.Form):
@@ -41,6 +84,9 @@ class UpdateArkForm(forms.Form):
     format = forms.CharField(required=False)
     relation = forms.CharField(required=False)
     source = forms.URLField(required=False)
+    cdn_url = forms.URLField(required=False)
+    event_name = forms.CharField(required=False)
+    related_arks = forms.JSONField(required=False, validators=[validate_related_arks])
     state = forms.ChoiceField(
         required=False,
         choices=[("active", "active"), ("tombstoned", "tombstoned")],

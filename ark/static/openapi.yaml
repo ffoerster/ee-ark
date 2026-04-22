@@ -1,0 +1,491 @@
+openapi: 3.0.3
+info:
+  title: ee-ark API
+  description: >
+    ARK identifier minting, binding, and resolution API.
+    Supports bulk operations, event history, and structured metadata
+    for archival objects (flyers, posters, etc.).
+  version: "0.4.0"
+  contact:
+    name: Florian Förster
+servers:
+  - url: http://127.0.0.1:8001
+    description: Local minter
+  - url: https://mint.electricechoes.org
+    description: Production minter
+
+paths:
+  /mint:
+    post:
+      summary: Mint a new ARK
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MintRequest'
+      responses:
+        '200':
+          description: ARK minted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ark:
+                    type: string
+                    example: "ark:/12345/t2abc1234"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /update:
+    put:
+      summary: Update an existing ARK
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRequest'
+      responses:
+        '200':
+          description: ARK updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArkResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /bulk_mint:
+    post:
+      summary: Mint up to 100 ARKs at once
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkMintRequest'
+      responses:
+        '200':
+          description: Bulk mint result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  num_received:
+                    type: integer
+                  arks_created:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ArkResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /bulk_update:
+    post:
+      summary: Update up to 100 ARKs at once
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkUpdateRequest'
+      responses:
+        '200':
+          description: Bulk update result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  num_received:
+                    type: integer
+                  num_updated:
+                    type: integer
+                  num_missing:
+                    type: integer
+                  missing_arks:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /bulk_query:
+    post:
+      summary: Query up to 100 ARKs at once
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BulkQueryRequest'
+      responses:
+        '200':
+          description: Query results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ArkResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /history:
+    get:
+      summary: Get change history for an ARK
+      parameters:
+        - name: ark
+          in: query
+          required: true
+          schema:
+            type: string
+          example: "ark:/12345/t2abc1234"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Event history
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ark:
+                    type: string
+                  count:
+                    type: integer
+                  events:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ArkEvent'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /ark:/{naan}/{id}:
+    get:
+      summary: Resolve an ARK
+      parameters:
+        - name: naan
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: info
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Return HTML landing page
+        - name: json
+          in: query
+          required: false
+          schema:
+            type: boolean
+          description: Return JSON metadata
+      responses:
+        '200':
+          description: HTML info page or JSON metadata
+        '302':
+          description: Redirect to target URL
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: Tombstoned ARK
+
+  /status:
+    get:
+      summary: Service status
+      responses:
+        '200':
+          description: Status OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  service:
+                    type: string
+                  status:
+                    type: string
+
+  /healthcheck:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Healthy
+        '503':
+          description: Degraded
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API key provisioned in the admin UI
+
+  schemas:
+    MintRequest:
+      type: object
+      required: [naan, shoulder]
+      properties:
+        naan:
+          type: integer
+          example: 12345
+        shoulder:
+          type: string
+          example: "/t2"
+        url:
+          type: string
+          format: uri
+        title:
+          type: string
+        type:
+          type: string
+        commitment:
+          type: string
+        identifier:
+          type: string
+        format:
+          type: string
+        relation:
+          type: string
+        source:
+          type: string
+          format: uri
+        metadata:
+          type: string
+        cdn_url:
+          type: string
+          format: uri
+          description: Direct link to image/PDF on CDN
+        event_name:
+          type: string
+          description: Event or venue name
+        related_arks:
+          type: array
+          description: Related ARK objects
+          items:
+            type: object
+            required: [ark, relation]
+            properties:
+              ark:
+                type: string
+              relation:
+                type: string
+                enum: [hasFront, hasBack, hasVariant, isPartOf]
+              label:
+                type: string
+
+    UpdateRequest:
+      type: object
+      required: [ark]
+      properties:
+        ark:
+          type: string
+          example: "ark:/12345/t2abc1234"
+        url:
+          type: string
+          format: uri
+        title:
+          type: string
+        type:
+          type: string
+        commitment:
+          type: string
+        identifier:
+          type: string
+        format:
+          type: string
+        relation:
+          type: string
+        source:
+          type: string
+          format: uri
+        metadata:
+          type: string
+        cdn_url:
+          type: string
+          format: uri
+        event_name:
+          type: string
+        related_arks:
+          type: array
+          items:
+            type: object
+            required: [ark, relation]
+            properties:
+              ark:
+                type: string
+              relation:
+                type: string
+                enum: [hasFront, hasBack, hasVariant, isPartOf]
+              label:
+                type: string
+        state:
+          type: string
+          enum: [active, tombstoned]
+        replaced_by:
+          type: string
+        tombstone_reason:
+          type: string
+
+    BulkMintRequest:
+      type: object
+      required: [naan, data]
+      properties:
+        naan:
+          type: integer
+        data:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            required: [shoulder]
+            properties:
+              shoulder:
+                type: string
+            allOf:
+              - $ref: '#/components/schemas/MintRequest'
+
+    BulkUpdateRequest:
+      type: object
+      required: [data]
+      properties:
+        data:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/UpdateRequest'
+
+    BulkQueryRequest:
+      type: object
+      properties:
+        data:
+          type: array
+          maxItems: 100
+          items:
+            type: object
+            required: [ark]
+            properties:
+              ark:
+                type: string
+
+    ArkResponse:
+      type: object
+      properties:
+        ark:
+          type: string
+        url:
+          type: string
+        title:
+          type: string
+        type:
+          type: string
+        commitment:
+          type: string
+        identifier:
+          type: string
+        format:
+          type: string
+        relation:
+          type: string
+        source:
+          type: string
+        metadata:
+          type: string
+        cdn_url:
+          type: string
+        event_name:
+          type: string
+        related_arks:
+          type: array
+          items:
+            type: object
+        state:
+          type: string
+        replaced_by:
+          type: string
+        tombstone_reason:
+          type: string
+
+    ArkEvent:
+      type: object
+      properties:
+        event_type:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        actor_key_hash:
+          type: string
+        ip:
+          type: string
+        diff:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+        request_id:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Validation or payload error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    Forbidden:
+      description: Invalid or missing API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+    NotFound:
+      description: ARK does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

@@ -33,9 +33,18 @@ class ShoulderAdmin(admin.ModelAdmin):
 
 @admin.register(Ark)
 class ArkAdmin(admin.ModelAdmin):
-    list_display = ["ark", "naan", "shoulder", "state", "url", "title"]
+    list_display = [
+        "ark",
+        "naan",
+        "shoulder",
+        "state",
+        "url",
+        "title",
+        "event_name",
+        "cdn_url",
+    ]
     list_filter = ["naan", "shoulder", "state"]
-    search_fields = ["ark", "url", "title", "identifier", "metadata"]
+    search_fields = ["ark", "url", "title", "identifier", "metadata", "event_name"]
     ordering = ["ark"]
     readonly_fields = [
         "ark",
@@ -51,6 +60,9 @@ class ArkAdmin(admin.ModelAdmin):
         "format",
         "relation",
         "source",
+        "cdn_url",
+        "event_name",
+        "related_arks",
     ]
 
     def has_add_permission(self, request):

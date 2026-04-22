@@ -43,8 +43,10 @@ def shoulder(db, naan):
 @pytest.fixture
 def auth(db, naan):
     """Create an access key for the initial naan."""
-    key = Key.objects.create(naan=naan, active=True)
-    return f"Bearer {key.key}"
+    key_inst = Key(naan=naan, active=True)
+    key_inst, api_key = key_inst.generate_api_key()
+    key_inst.save()
+    return f"Bearer {api_key}"
 
 
 @pytest.fixture
@@ -154,8 +156,8 @@ class TestMintArk:
         # When the authorization header value isn't a UUID4
         mint_ark_args.HTTP_AUTHORIZATION = "Bearer not-a-uuid4"
         res = client.post(**asdict(mint_ark_args))
-        # Then we get a 400 Bad Request
-        assert res.status_code == 400
+        # Then we get a 403 Forbidden (key not found)
+        assert res.status_code == 403
 
     def test_authorized_naan_matches_post_naan(self, client, mint_ark_args) -> None:
         """mint_ark NAAN in auth header matches NAAN in POST body."""
@@ -166,7 +168,7 @@ class TestMintArk:
         assert res.status_code == 403
 
     @pytest.mark.django_db(transaction=True)
-    @patch("ark.views.generate_noid")
+    @patch("ark.utils.generate_noid")
     def test_fails_after_too_many_collisions(
         self, mock_noid_gen, caplog, client, mint_ark_args, ark
     ) -> None:
@@ -177,9 +179,6 @@ class TestMintArk:
         within a transaction. That prevents the test from using transaction features
         within the test. `transaction=True` is equivalent to Django
         TransactionTestCase. `transaction=False` is equivalent to Django TestCase.
-
-        We patch ark.views.generate_noid (even though generate_noid is originally
-        defined in ark.utils) because it is imported directly into ark.views.
         """
         # pylint: disable=too-many-arguments
         # When mint_ark keeps creating NOIDs that collide with an existing ARK
@@ -193,7 +192,7 @@ class TestMintArk:
         assert res.status_code == 500
 
     @pytest.mark.django_db(transaction=True)
-    @patch("ark.views.generate_noid")
+    @patch("ark.utils.generate_noid")
     def test_succeeds_on_single_collision(
         self, mock_noid_gen, caplog, client, mint_ark_args, ark
     ) -> None:
@@ -541,3 +540,101 @@ class TestArkHistory:
         assert res.status_code == 400
         body = res.json()
         assert body["code"] == "invalid_payload"
+
+
+class TestRelatedArks:
+    @pytest.mark.django_db
+    def test_related_arks_in_json(self, client, naan, shoulder) -> None:
+        front = Ark.objects.create(
+            ark=f"{naan.naan}{shoulder.shoulder}front1",
+            naan=naan,
+            shoulder=shoulder,
+            assigned_name="front1",
+            cdn_url="https://cdn.example.com/front.jpg",
+            event_name="Warehouse Rave",
+        )
+        back = Ark.objects.create(
+            ark=f"{naan.naan}{shoulder.shoulder}back1",
+            naan=naan,
+            shoulder=shoulder,
+            assigned_name="back1",
+            related_arks=[
+                {
+                    "ark": f"ark:/{front.ark}",
+                    "relation": "hasFront",
+                    "label": "Vorderseite",
+                }
+            ],
+        )
+        res = client.get(f"/ark:/{front.ark}?json")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["cdn_url"]["value"] == "https://cdn.example.com/front.jpg"
+        assert data["event_name"]["value"] == "Warehouse Rave"
+        related = data["related_arks"]["value"]
+        assert len(related) == 1
+        assert related[0]["ark"] == f"ark:/{back.ark}"
+        assert related[0]["relation"] == "hasBack"
+        assert related[0]["direction"] == "inverse"
+
+    @pytest.mark.django_db
+    def test_bidirectional_related_arks(self, client, naan, shoulder) -> None:
+        poster = Ark.objects.create(
+            ark=f"{naan.naan}{shoulder.shoulder}poster1",
+            naan=naan,
+            shoulder=shoulder,
+            assigned_name="poster1",
+            related_arks=[
+                {
+                    "ark": f"ark:/{naan.naan}{shoulder.shoulder}flyer1",
+                    "relation": "hasVariant",
+                    "label": "Flyer",
+                }
+            ],
+        )
+        flyer = Ark.objects.create(
+            ark=f"{naan.naan}{shoulder.shoulder}flyer1",
+            naan=naan,
+            shoulder=shoulder,
+            assigned_name="flyer1",
+        )
+        res = client.get(f"/ark:/{flyer.ark}?json")
+        data = res.json()
+        related = data["related_arks"]["value"]
+        assert any(
+            r["ark"] == f"ark:/{poster.ark}" and r["relation"] == "hasVariant"
+            for r in related
+        )
+
+    @pytest.mark.django_db
+    def test_invalid_related_arks_relation(self, client, naan, shoulder, auth) -> None:
+        res = client.post(
+            "/mint",
+            data={
+                "naan": naan.naan,
+                "shoulder": shoulder.shoulder,
+                "related_arks": [{"ark": "ark:/1/t2test", "relation": "invalidRel"}],
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=auth,
+        )
+        assert res.status_code == 400
+        body = res.json()
+        assert body["code"] == "validation_error"
+        assert "related_arks" in str(body["details"])
+
+    @pytest.mark.django_db
+    def test_cdn_url_and_event_name_in_info(self, client, naan, shoulder) -> None:
+        ark_obj = Ark.objects.create(
+            ark=f"{naan.naan}{shoulder.shoulder}infotest2",
+            naan=naan,
+            shoulder=shoulder,
+            assigned_name="infotest2",
+            cdn_url="https://cdn.example.com/img.jpg",
+            event_name="Test Event",
+        )
+        res = client.get(f"/ark:/{ark_obj.ark}?info")
+        assert res.status_code == 200
+        content = res.content.decode()
+        assert "Test Event" in content
+        assert "cdn.example.com/img.jpg" in content

@@ -101,6 +101,9 @@ class Ark(models.Model):
     format = models.TextField(default="", blank=True)
     relation = models.TextField(default="", blank=True)
     source = models.TextField(default="", blank=True)
+    cdn_url = models.URLField(default="", blank=True)
+    event_name = models.CharField(max_length=500, default="", blank=True)
+    related_arks = models.JSONField(default=list, blank=True, null=True)
     state = models.CharField(
         max_length=32,
         choices=STATE_CHOICES,
@@ -108,6 +111,20 @@ class Ark(models.Model):
     )
     replaced_by = models.CharField(max_length=200, default="", blank=True)
     tombstone_reason = models.TextField(default="", blank=True)
+
+    RELATION_CHOICES = {
+        "hasFront",
+        "hasBack",
+        "hasVariant",
+        "isPartOf",
+    }
+
+    INVERSE_RELATIONS = {
+        "hasFront": "hasBack",
+        "hasBack": "hasFront",
+        "hasVariant": "hasVariant",
+        "isPartOf": "hasPart",
+    }
 
     COLUMN_METADATA = {
         "title": {
@@ -144,6 +161,29 @@ class Ark(models.Model):
         expected_ark = f"{self.naan.naan}{self.shoulder}{self.assigned_name}"
         if self.ark != expected_ark:
             raise ValidationError(f"expected {expected_ark} got {self.ark}")
+
+        if self.related_arks:
+            if not isinstance(self.related_arks, list):
+                raise ValidationError({"related_arks": "Must be a list of objects."})
+            for i, item in enumerate(self.related_arks):
+                if not isinstance(item, dict):
+                    raise ValidationError(
+                        {"related_arks": f"Item {i} must be an object."}
+                    )
+                if "ark" not in item:
+                    raise ValidationError(
+                        {"related_arks": f"Item {i} is missing 'ark'."}
+                    )
+                relation = item.get("relation", "")
+                if relation not in self.RELATION_CHOICES:
+                    raise ValidationError(
+                        {
+                            "related_arks": (
+                                f"Item {i} has invalid relation '{relation}'. "
+                                f"Allowed: {', '.join(sorted(self.RELATION_CHOICES))}"
+                            )
+                        }
+                    )
 
     @classmethod
     def create(cls, naan: Naan, shoulder: Shoulder):
