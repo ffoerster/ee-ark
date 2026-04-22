@@ -70,6 +70,7 @@ class MintArkForm(forms.Form):
     source = forms.URLField(required=False)
     cdn_url = forms.URLField(required=False)
     event_name = forms.CharField(required=False)
+    cite_as = forms.CharField(required=False)
     related_arks = forms.JSONField(required=False, validators=[validate_related_arks])
 
 
@@ -86,6 +87,7 @@ class UpdateArkForm(forms.Form):
     source = forms.URLField(required=False)
     cdn_url = forms.URLField(required=False)
     event_name = forms.CharField(required=False)
+    cite_as = forms.CharField(required=False)
     related_arks = forms.JSONField(required=False, validators=[validate_related_arks])
     state = forms.ChoiceField(
         required=False,

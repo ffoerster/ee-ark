@@ -103,6 +103,7 @@ class Ark(models.Model):
     source = models.TextField(default="", blank=True)
     cdn_url = models.URLField(default="", blank=True)
     event_name = models.CharField(max_length=500, default="", blank=True)
+    cite_as = models.TextField(default="", blank=True)
     related_arks = models.JSONField(default=list, blank=True, null=True)
     state = models.CharField(
         max_length=32,

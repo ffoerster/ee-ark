@@ -420,6 +420,7 @@ def view_ark(request: HttpRequest, ark: Ark, status_code=200):
         "metadata": ark.metadata,
         "cdn_url": ark.cdn_url,
         "event_name": ark.event_name,
+        "cite_as": ark.cite_as,
         "related_arks": related,
         "state": ark.state,
         "replaced_by": ark.replaced_by,

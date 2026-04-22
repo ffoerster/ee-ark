@@ -243,12 +243,12 @@
 
             <div class="cite-box">
                 <div class="cite-label">Cite as</div>
-                {% if label %}{{ label }}. {% endif %}ark:/{{ ark }}{% if url %} — {{ url }}{% endif %}
+                {% if cite_as %}{{ cite_as }}{% else %}{% if label %}{{ label }}. {% endif %}ark:/{{ ark }}{% if url %} — {{ url }}{% endif %}{% endif %}
             </div>
         </div>
 
         <footer>
-            Persistent identifier provided by <a href="/" style="color:var(--muted);">ARK Resolver</a>
+            Persistent identifier provided by <a href="/" style="color:var(--muted);">Electric Echoes ARK Resolver</a>
         </footer>
     </div>
 </body>
