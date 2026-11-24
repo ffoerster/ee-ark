@@ -1,5 +1,9 @@
 default: local
 
+.PHONY: requirements
+requirements:
+	python3 scripts/lock_to_requirements.py > requirements.txt
+
 local:
 	docker-compose up --build
 

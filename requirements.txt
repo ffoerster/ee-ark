@@ -1,28 +1,19 @@
-appdirs==1.4.4
-asgiref==3.8.1
-black==26.3.1
-certifi==2024.7.4
-click==8.2.1
-Django==5.1.15
-gunicorn==23.0.0
-Jinja2>=3.1.4
-MarkupSafe==2.0.1
-mypy-extensions==0.4.3
-pathspec==1.0.4
-platformdirs==2.4.0
-psycopg2-binary==2.9.9
-pytz==2021.3
-PyYAML==6.0.2
-regex==2025.7.31
+# Generated from poetry.lock - do not edit by hand.
+# Regenerate with: make requirements
+#
+argon2-cffi-bindings==26.2.0
+argon2-cffi==25.1.0
+asgiref==3.13.0
+certifi==2026.11.20
+cffi==2.1.1
+django-environ==0.8.1
+django-ratelimit==4.1.0
+django==5.2.19
+gunicorn==27.0.1
+psycopg2-binary==2.9.13
+pycparser==3.12 ; implementation_name != "PyPy"
 sentry-sdk==1.45.1
-sqlparse>=0.5.0
-tomli==1.2.2
-typing-extensions==4.12.2
-requests==2.32.4
-rich==15.0.0
-urllib3==2.6.3
-django-environ==0.8.0
+sqlparse==0.6.1
+tzdata==2026.6 ; sys_platform == "win32"
+urllib3==2.8.0
 whitenoise==6.12.0
-argon2-cffi==21.3.0
-argon2-cffi-bindings==21.2.0
-django-ratelimit>=4.0.0
