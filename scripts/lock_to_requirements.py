@@ -46,7 +46,7 @@ def main() -> int:
 
         requirement = f"{package['name']}=={package['version']}"
         if marker:
-            requirement += f' ; {marker}'
+            requirement += f" ; {marker}"
         lines.append(requirement)
 
     sys.stdout.write(HEADER + "\n".join(sorted(lines, key=str.lower)) + "\n")
